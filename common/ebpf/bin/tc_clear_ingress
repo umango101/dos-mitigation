@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    _devs=($(/usr/local/dos_mitigation/common/bin/list_exp_devs))
+else
+    _devs=($1)
+fi
+
+for _dev in "${_devs[@]}"; do 
+    sudo tc filter del dev $_dev ingress
+done

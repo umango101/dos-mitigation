@@ -1,0 +1,6 @@
+- name: Enable SYN Cookies at Server
+  hosts: server
+  tasks:
+    - name: Enable SYN Cookies at Server
+      shell: "{{ user_dir }}/common/mitigations/syn_cookies.sh 1"
+      become: yes

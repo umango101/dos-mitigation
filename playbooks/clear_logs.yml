@@ -1,0 +1,17 @@
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: delete old logs
+    file:
+      path: /tmp/logs
+      state: absent
+  - name: recreate log directory
+    file:
+      path: /tmp/logs
+      state: directory
+  - name: create .hostname file
+    copy:
+      content: "{{ inventory_hostname }}"
+      dest: /tmp/logs/.hostname
+      force: false
+

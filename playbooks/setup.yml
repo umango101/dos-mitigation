@@ -1,0 +1,6 @@
+- import_playbook: "network_config.yml"
+- import_playbook: "inventory.yml"
+- import_playbook: "server_config.yml"
+- import_playbook: "attacker_config.yml"
+- import_playbook: "route_config.yml"
+- import_playbook: "route_test.yml"

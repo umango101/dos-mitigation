@@ -1,0 +1,6 @@
+- name: compile attacks
+  hosts: attacker
+  tasks:
+    - name: compile attack programs
+      shell: gcc {{ item }} -o {{ item | splitext | first }}
+      with_fileglob: "{{ user_dir }}/common/attacks/*.c"

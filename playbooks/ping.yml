@@ -1,0 +1,8 @@
+- name: debug
+  hosts: all
+  tasks:
+  - name: ICMP Ping
+    shell: ping -c 1 {{ server_name }}
+    register: ping_output
+  - debug:
+      var: ping_output.stdout

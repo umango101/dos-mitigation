@@ -1,0 +1,8 @@
+#!/bin/bash
+
+next_ip=$(ip route get $1 | grep -oP "via\s+\K\S+")
+if [ -z "$next_ip" ]; then
+  echo $1
+else
+  echo $next_ip
+fi

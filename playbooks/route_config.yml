@@ -1,0 +1,113 @@
+- name: change default routes
+  hosts: server, router, active_clients, active_attackers
+  gather_facts: true
+  tasks:
+    # - name: enable packet forwarding
+    #   shell: "{{ user_dir }}/common/bin/toggle_ipv4_forwarding 1"
+    #   become: yes
+    
+    - name: flush route cache
+      shell: ip route flush cache
+      become: yes
+    
+    - name: get nexthop device for control GW A
+      shell: "{{ user_dir }}/common/bin/nexthop_dev {{ control_gw_a }}"
+      register: control_dev_a
+      ignore_errors: yes
+      become: yes
+    - name: get nexthop device for control GW B
+      when: bare_metal == "true"
+      shell: "{{ user_dir }}/common/bin/nexthop_dev {{ control_gw_b }}"
+      register: control_dev_b
+      ignore_errors: yes
+      become: yes
+
+    - name: get sink IP
+      shell: "{{ user_dir }}/common/bin/hostname_to_ip {{ sink_name }}"
+      register: sink_ip
+      ignore_errors: yes
+      become: yes
+    - name: get nexthop IP for sink
+      shell: "{{ user_dir }}/common/bin/nexthop_ip {{ sink_ip.stdout }}"
+      register: sink_next_ip
+      failed_when: sink_next_ip.rc not in [0,1]
+      become: yes
+    - set_fact:
+        next_ip: "{{ sink_next_ip.stdout }}"
+      when: sink_next_ip.rc == 0
+    - set_fact:
+        next_ip: "{{ sink_ip.stdout }}"
+      when: sink_next_ip.rc == 1
+      
+    - name: get nexthop device for sink
+      shell: "{{ user_dir }}/common/bin/nexthop_dev {{ next_ip }}"
+      register: sink_next_dev
+      ignore_errors: yes
+      become: yes
+    - set_fact:
+        next_dev: "{{ sink_next_dev.stdout }}"
+
+    - name: replace default route
+      shell: ip route replace default via {{ next_ip }} dev {{ next_dev }} metric 0 onlink
+      become: yes
+      ignore_errors: yes
+    - name: delete old default route A
+      shell: ip route del default dev {{ control_dev_a.stdout }}
+      become: yes
+      register: result
+      failed_when:
+        - result.rc != 0
+        - '"No such process" not in result.stderr'
+    - name: delete old default route B
+      when: bare_metal == "true"
+      shell: ip route del default dev {{ control_dev_b.stdout }}
+      become: yes
+      register: result
+      failed_when:
+        - result.rc != 0
+        - '"No such process" not in result.stderr'
+
+
+- name: configure sink to drop outbound traffic
+  hosts: sink
+  vars:
+    control_gw_a: 172.30.0.1
+    control_gw_b: 172.29.0.1
+  tasks:
+    - name: get nexthop device for control GW A
+      shell: "{{ user_dir }}/common/bin/nexthop_dev {{ control_gw_a }}"
+      register: control_dev_a
+      ignore_errors: yes
+      become: yes
+    - name: get nexthop device for control GW B
+      when: bare_metal == "true"
+      shell: "{{ user_dir }}/common/bin/nexthop_dev {{ control_gw_b }}"
+      register: control_dev_b
+      ignore_errors: yes
+      become: yes
+    - name: add new default route
+      shell: ip route replace blackhole default
+      become: yes
+    - name: delete old default route A
+      shell: ip route del default dev {{ control_dev_a.stdout }}
+      become: yes
+      register: result
+      failed_when:
+        - result.rc != 0
+        - '"No such process" not in result.stderr'
+    - name: delete old default route B
+      when: bare_metal == "true"
+      shell: ip route del default dev {{ control_dev_b.stdout }}
+      become: yes
+      register: result
+      failed_when:
+        - result.rc != 0
+        - '"No such process" not in result.stderr'
+    - name: drop outbound traffic
+      shell: "{{ user_dir }}/common/bin/drop_outbound"
+      become: yes
+      
+    # - name:
+    # - name: disable packet forwarding
+    #   shell: "{{ user_dir }}/common/bin/toggle_ipv4_forwarding 0"
+    #   become: yes

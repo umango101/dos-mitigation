@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    _devs=($(/usr/local/dos_mitigation/common/bin/list_exp_devs))
+else
+    _devs=($1)
+fi
+
+for _dev in "${_devs[@]}"; do 
+    echo "Device: $_dev"
+    echo "INGRESS"
+    sudo tc filter show dev $_dev ingress
+    echo "EGRESS"
+    sudo tc filter show dev $_dev egress
+done

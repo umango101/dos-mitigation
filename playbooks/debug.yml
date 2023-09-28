@@ -1,0 +1,8 @@
+- name: debug
+  hosts: all
+  tasks:
+  - name: Facts
+    debug:
+      var: ansible_facts
+  - name: Ansible Ping
+    ping:

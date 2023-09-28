@@ -1,0 +1,4 @@
+#!/bin/bash
+
+sudo bpftool map update id $1 key 00 00 00 00 value 00 00 00 00
+sudo bpftool map update id $1 key 01 00 00 00 value 00 00 00 00

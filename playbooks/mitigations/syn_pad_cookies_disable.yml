@@ -1,0 +1,28 @@
+- name: Disable SYN Padding at Server Ingress
+  hosts: syn_pow_verifier
+  tasks:
+    - name: setup tc qdisc
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
+      register: result
+      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
+      become: yes
+    - name: re-compile and re-attach eBPF program
+      shell: "{{ user_dir }}/common/mitigations/syn_pad_ingress.sh 0"
+
+- name: Disable SYN PoW at Client Egress
+  hosts: active_clients
+  tasks:
+    - name: setup tc qdisc
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
+      register: result
+      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
+      become: yes
+    - name: re-compile and re-attach eBPF program
+      shell: "{{ user_dir }}/common/mitigations/syn_pad_egress.sh 0"
+
+- name: Disable SYN Cookies at Server
+  hosts: server
+  tasks:
+    - name: Disable SYN Cookies at Server
+      shell: "{{ user_dir }}/common/mitigations/syn_cookies.sh 0"
+      become: yes

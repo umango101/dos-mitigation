@@ -1,0 +1,5 @@
+- hosts: all
+  tasks:
+    - name: reset SSH fingerprints
+      shell: ssh-keygen -R {{ inventory_hostname }}
+      delegate_to: localhost

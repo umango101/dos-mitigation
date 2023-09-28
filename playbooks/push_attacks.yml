@@ -1,0 +1,8 @@
+- hosts: active_attackers
+  name: push common attack files
+  tasks:
+  - name: push common attack files
+    copy:
+      src: "{{ user_dir }}/common/attacks"
+      dest: "{{ user_dir }}/common/"
+      mode: preserve

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+_id=$1
+
+watch -n 2 "sudo bpftool map dump id $1"

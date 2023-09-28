@@ -1,0 +1,7 @@
+- name: reboot
+  hosts: all
+  gather_facts: false
+  tasks:
+    - reboot:
+        post_reboot_delay: 5
+      become: yes

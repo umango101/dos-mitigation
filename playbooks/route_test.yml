@@ -1,0 +1,8 @@
+- name: route test
+  hosts: server, router, sink, active_clients, active_attackers
+  gather_facts: no
+  tasks:
+    - name: ensure 8.8.8.8 is unreachable
+      shell: ping -c1 -W2 8.8.8.8
+      register: result
+      failed_when: result.rc == 0

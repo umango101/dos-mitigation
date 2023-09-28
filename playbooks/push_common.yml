@@ -1,0 +1,8 @@
+- hosts: all
+  name: push common files
+  tasks:
+  - name: push common files
+    copy:
+      src: "{{ user_dir }}/common"
+      dest: "{{ user_dir }}/"
+      mode: preserve

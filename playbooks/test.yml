@@ -1,0 +1,8 @@
+- hosts: all
+  name: test
+  tasks:
+  - name: foo
+    file:
+      path: /home/sdelaugh/common
+      state: absent
+    become: yes

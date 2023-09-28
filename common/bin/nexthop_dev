@@ -1,0 +1,3 @@
+#!/bin/bash
+
+ip route get $1 | grep -oP "dev\s+\K\S+"

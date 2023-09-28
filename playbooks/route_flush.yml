@@ -1,0 +1,7 @@
+- name: route flush
+  hosts: sink
+  gather_facts: no
+  tasks:
+    - name: flush iptables
+      shell: iptables -F
+      become: yes

@@ -1,0 +1,26 @@
+- hosts: all
+  tasks:
+  - name: check kernel version
+    shell: uname -r
+    register: kernel_version
+
+  - name: install eBPF dependencies
+    apt:
+      name: gcc, gcc-multilib, clang, llvm, linux-tools-common, linux-tools-generic, linux-tools-{{ kernel_version.stdout }}, libbpf-dev
+      update_cache: yes
+    become: yes
+
+  - name: install general dependencies
+    apt:
+      name: net-tools, traceroute, tcpstat, ncat, cpulimit, bc
+      update_cache: yes
+    become: yes
+
+- hosts: server
+  tasks:
+  - name: install server dependencies
+    apt:
+      name: apache2
+    become: yes
+
+- import_playbook: "push_common.yml"

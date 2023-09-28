@@ -1,0 +1,18 @@
+#!/bin/bash
+
+_prog=$1
+if [ -z "$2" ]; then
+    _devs=($(/usr/local/dos_mitigation/common/bin/list_exp_devs))
+else
+    _devs=($2)
+fi
+
+for _dev in "${_devs[@]}"; do 
+  clang -O2 -target bpf -c $_prog.c -o $_prog\
+    -I /usr/include/bpf\
+    -I /usr/include/iproute2\
+    -I /usr/include/x86_64-linux-gnu
+
+  sudo tc filter del dev $_dev egress
+  sudo tc filter add dev $_dev egress bpf direct-action obj $_prog section egress
+done

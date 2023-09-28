@@ -1,0 +1,14 @@
+#!/bin/bash
+
+playbook=$1
+args=$2
+
+hosts="hosts"
+playbook_dir="playbooks"
+playbook="$playbook_dir/$1.yml"
+
+if [ $# -lt 2 ]; then
+    ansible-playbook -i $hosts $playbook
+else
+    ansible-playbook -i $hosts -e "$args" $playbook
+fi

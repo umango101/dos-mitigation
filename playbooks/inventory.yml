@@ -1,0 +1,32 @@
+- hosts: server, router, sink, active_clients, active_attackers
+  vars:
+    user_dir: "{{ user_dir }}"
+  tasks:
+  - name: copy etchosts file
+    copy:
+      src: "{{ user_dir }}/etchosts"
+      dest: "{{ user_dir }}/"
+  - name: add exp_ hostname
+    blockinfile:
+      dest: /etc/hostname
+      block: "exp_{{ inventory_hostname }}
+      marker: "# {mark} Ansible Hostname"
+    become: yes
+  - name: add exp_ name for localhost
+    blockinfile:
+      dest: /etc/hosts
+      block: "127.0.0.1 exp_{{ inventory_hostname }}"
+      marker: "# {mark} Ansible Localhost"
+    become: yes
+  - name: insert into /etc/hosts
+    blockinfile:
+      dest: /etc/hosts
+      block: "{{ lookup('file', '{{ user_dir }}/etchosts') }}"
+      marker: "# {mark} Ansible Managed Exp. Network "
+    become: yes
+  - name: restart networking service
+    systemd:
+      name: systemd-networkd
+      state: restarted
+      daemon_reload: yes
+    become: yes

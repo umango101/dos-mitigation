@@ -1,0 +1,35 @@
+- hosts: client, attacker
+  tasks:
+  - name: get server IP
+    shell: "{{ user_dir }}/common/bin/hostname_to_ip {{ server_name }}"
+    register: server_ip
+  - name: get server dev
+    shell: "{{ user_dir }}/common/bin/nexthop_dev {{ server_ip }}"
+    register: server_dev
+  - name: add qdisc
+    shell: tc qdisc add dev {{ server_dev }} clsact
+    become: yes
+
+- hosts: server
+  tasks:
+  - name: get client IP
+    shell: "{{ user_dir }}/common/bin/hostname_to_ip {{ exp_c0 }}"
+    register: client_ip
+  - name: get client dev
+    shell: "{{ user_dir }}/common/bin/nexthop_dev {{ client_ip }}"
+    register: client_dev
+  - name: add qdisc
+    shell: tc qdisc add dev {{ client_dev }} clsact
+    become: yes
+
+- hosts: r0
+  tasks:
+  - name: get client IP
+    shell: "{{ user_dir }}/common/bin/hostname_to_ip {{ exp_c0 }}"
+    register: client_ip
+  - name: get client dev
+    shell: "{{ user_dir }}/common/bin/nexthop_dev {{ client_ip }}"
+    register: client_dev
+  - name: add qdisc
+    shell: tc qdisc add dev {{ client_dev }} clsact
+    become: yes

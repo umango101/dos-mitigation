@@ -1,0 +1,8 @@
+#!/bin/bash
+
+#!/bin/bash
+
+clang -O2 -target bpf -c $1.c -o $1\
+  -I /usr/include/bpf\
+  -I /usr/include/iproute2\
+  -I /usr/include/x86_64-linux-gnu

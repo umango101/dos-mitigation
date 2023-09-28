@@ -1,0 +1,13 @@
+- hosts: all
+  name: push common mitigation files
+  tasks:
+  - name: push common mitigation files
+    copy:
+      src: "{{ user_dir }}/common/mitigations"
+      dest: "{{ user_dir }}/common/"
+      mode: preserve
+  - name: push common eBPF files
+    copy:
+      src: "{{ user_dir }}/common/ebpf"
+      dest: "{{ user_dir }}/common/"
+      mode: preserve

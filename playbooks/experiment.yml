@@ -1,0 +1,329 @@
+# Setup
+- import_playbook: "setup.yml"
+
+- hosts: server, router, sink, active_clients, active_attackers
+  tasks:
+    - name: create local log directories
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+        state: directory
+      delegate_to: localhost
+- hosts: localhost
+  tasks:
+    - name: copy settings
+      copy:
+        src: "{{ user_dir }}/.settings"
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/.settings"
+
+# Unmitigated Baseline
+- import_playbook: "clear_logs.yml"
+- import_playbook: "mitigations/{{ mitigation }}_disable.yml"
+
+- hosts: active_clients
+  gather_facts: no
+  tasks:
+  - name: start {{ client_app }} clients
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }}
+    async: "{{ client_duration }}"
+    poll: 0
+    register: client_async
+  - name: wait for clients
+    pause:
+      seconds: "{{ client_duration }}"
+  - name: check on clients
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+  - name: async cleanup
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+      mode: cleanup
+
+- hosts: server
+  gather_facts: no
+  tasks:
+  - name: restart apache2
+    systemd:
+      name: apache2
+      state: restarted
+      daemon_reload: yes
+    become: yes
+
+- hosts: server, router, sink, active_clients, active_attackers
+  gather_facts: no
+  tasks:
+  - name: wait for logging to finish
+    pause:
+      seconds: "{{ cleanup_delay }}"
+  - name: compress logs
+    archive:
+      path: /tmp/logs
+      dest: /tmp/logs.zip
+      format: zip
+    ignore_errors: yes
+  - name: collect logs
+    fetch:
+      src: /tmp/logs.zip
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UB/logs.zip"
+      flat: yes
+    ignore_errors: yes
+
+# Unmitigated Attack
+- import_playbook: "clear_logs.yml"
+- hosts: active_attackers
+  gather_facts: no
+  tasks:
+  - name: get server IP
+    shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
+    register: server_ip
+  - name: launch {{ attack_type }} attack at {{ server_name }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ server_ip.stdout }} {{ server_port }} {{ attacker_busywait }}
+    async: "{{ attack_duration }}"
+    poll: 0
+    become: yes
+    register: attacker_async
+
+- hosts: active_clients
+  gather_facts: no
+  tasks:
+  - name: start {{ client_app }} clients
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }}
+    async: "{{ client_duration }}"
+    poll: 0
+    register: client_async
+  - name: wait for clients
+    pause:
+      seconds: "{{ client_duration }}"
+  - name: check on clients
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+  - name: async cleanup
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+      mode: cleanup
+
+- hosts: active_attackers
+  tasks:
+  - name: check on attackers
+    async_status:
+      jid: "{{ attacker_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+    become: yes
+  - name: async cleanup
+    async_status:
+      jid: "{{ attacker_async.ansible_job_id }}"
+      mode: cleanup
+    become: yes
+  - name: wait for attack traffic to flush out
+    pause:
+      seconds: "{{ post_attack_delay }}"
+
+- hosts: server
+  gather_facts: no
+  tasks:
+  - name: restart apache2
+    systemd:
+      name: apache2
+      state: restarted
+      daemon_reload: yes
+    become: yes
+
+- hosts: server, router, sink, active_clients, active_attackers
+  gather_facts: no
+  tasks:
+  - name: wait for logging to finish
+    pause:
+      seconds: "{{ cleanup_delay }}"
+  - name: compress logs
+    archive:
+      path: /tmp/logs
+      dest: /tmp/logs.zip
+      format: zip
+    ignore_errors: yes
+  - name: collect logs
+    fetch:
+      src: /tmp/logs.zip
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UA/logs.zip"
+      flat: yes
+    ignore_errors: yes
+
+# Mitigated Baseline
+- import_playbook: "clear_logs.yml"
+- import_playbook: "mitigations/{{ mitigation }}_enable.yml"
+
+- hosts: active_clients
+  gather_facts: no
+  tasks:
+  - name: start {{ client_app }} clients
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }}
+    async: "{{ client_duration }}"
+    poll: 0
+    register: client_async
+  - name: wait for clients
+    pause:
+      seconds: "{{ client_duration }}"
+  - name: check on clients
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+  - name: async cleanup
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+      mode: cleanup
+
+- hosts: server
+  gather_facts: no
+  tasks:
+  - name: restart apache2
+    systemd:
+      name: apache2
+      state: restarted
+      daemon_reload: yes
+    become: yes
+
+- hosts: server, router, sink, active_clients, active_attackers
+  gather_facts: no
+  tasks:
+  - name: wait for logging to finish
+    pause:
+      seconds: "{{ cleanup_delay }}"
+  - name: compress logs
+    archive:
+      path: /tmp/logs
+      dest: /tmp/logs.zip
+      format: zip
+    ignore_errors: yes
+  - name: collect logs
+    fetch:
+      src: /tmp/logs.zip
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/MB/"
+      flat: yes
+    ignore_errors: yes
+
+# Mitigated Attack
+- import_playbook: "clear_logs.yml"
+- hosts: active_attackers
+  gather_facts: no
+  tasks:
+  - name: get server IP
+    shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
+    register: server_ip
+  - name: launching {{ mitigated_attack_type }} attack at {{ server_name }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ server_ip.stdout }} {{ server_port }} {{ attacker_busywait }}
+    async: "{{ attack_duration }}"
+    poll: 0
+    register: attacker_async
+    become: yes
+
+- hosts: active_clients
+  gather_facts: no
+  tasks:
+  - name: start {{ client_app }} clients
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }}
+    async: "{{ client_duration }}"
+    poll: 0
+    register: client_async
+  - name: wait for clients
+    pause:
+      seconds: "{{ client_duration }}"
+  - name: check on clients
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+  - name: async cleanup
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+      mode: cleanup
+
+- hosts: active_attackers
+  tasks:
+  - name: check on attackers
+    async_status:
+      jid: "{{ attacker_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+    become: yes
+  - name: async cleanup
+    async_status:
+      jid: "{{ attacker_async.ansible_job_id }}"
+      mode: cleanup
+    become: yes
+  - name: wait for attack traffic to flush out
+    pause:
+      seconds: "{{ post_attack_delay }}"
+
+- hosts: server
+  gather_facts: no
+  tasks:
+  - name: restart apache2
+    systemd:
+      name: apache2
+      state: restarted
+      daemon_reload: yes
+    become: yes
+
+- hosts: server, router, sink, active_clients, active_attackers
+  gather_facts: no
+  tasks:
+  - name: wait for logging to finish
+    pause:
+      seconds: "{{ cleanup_delay }}"
+  - name: compress logs
+    archive:
+      path: /tmp/logs
+      dest: /tmp/logs.zip
+      format: zip
+    ignore_errors: yes
+  - name: collect logs
+    fetch:
+      src: /tmp/logs.zip
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/MA/"
+      flat: yes
+    ignore_errors: yes
+
+- import_playbook: "mitigations/{{ mitigation }}_disable.yml"
+
+- hosts: server, router, sink, active_clients, active_attackers
+  gather_facts: yes
+  vars:
+    - log_dir: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+  tasks:
+    - name: decompress logs
+      unarchive:
+        src: "{{ log_dir }}/{{ item }}/logs.zip"
+        dest: "{{ log_dir }}/{{ item }}/"
+      loop:
+        - "UB"
+        - "UA"
+        - "MB"
+        - "MA"
+      delegate_to: localhost
+      ignore_errors: yes
+    - name: delete zip files
+      file:
+        path: "{{ log_dir }}/{{ item }}/logs.zip"
+        state: absent
+      loop:
+        - "UB"
+        - "UA"
+        - "MB"
+        - "MA"
+      become: yes
+      delegate_to: localhost
+    # - name: copy fact files
+    #   copy:
+    #     src: /tmp/ansible_facts/{{ inventory_hostname }}
+    #     dest: "{{ log_dir }}/.facts.json"
+    #   delegate_to: localhost

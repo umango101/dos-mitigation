@@ -1,0 +1,13 @@
+#!/bin/bash
+
+_prog=$1
+if [ -z "$2" ]; then
+    _devs=($(/usr/local/dos_mitigation/common/bin/list_exp_devs))
+else
+    _devs=($2)
+fi
+
+for _dev in "${_devs[@]}"; do 
+    sudo tc filter add dev $_dev ingress bpf direct-action obj $_prog section ingress
+    sudo tc filter add dev $_dev egress bpf direct-action obj $_prog section egress
+done

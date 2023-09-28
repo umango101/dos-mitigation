@@ -1,0 +1,6 @@
+- name: Disable SYN Cookies at Server
+  hosts: server
+  tasks:
+    - name: Disable SYN Cookies at Server
+      shell: "{{ user_dir }}/common/mitigations/syn_cookies.sh 0"
+      become: yes

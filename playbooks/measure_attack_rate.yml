@@ -1,0 +1,44 @@
+- hosts: active_attackers
+  gather_facts: no
+  tasks:
+  - name: start attackers
+    shell: timeout 30 {{ user_dir }}/common/attacks/{{ attack_vector }} 10.0.1.2 80 {{ attacker_busywait }}
+    async: 30
+    poll: 0
+    become: yes
+    
+- hosts: r2
+  gather_facts: no
+  tasks:
+  - name: start monitor
+    shell: timeout 30 {{ user_dir }}/common/monitors/tcpstat.sh enp2s0 10.0.1.2 80
+    become: yes
+    async: 30
+    register: result
+    failed_when: result.rc not in [0,124]
+
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: wait for attack traffic to flush out
+    pause:
+      seconds: 10
+
+- hosts: r2
+  gather_facts: no
+  tasks:
+  - name: wait for logging to finish
+    pause:
+      seconds: 10
+  - name: compress logs
+    archive:
+      path: /tmp/logs/*
+      dest: /tmp/logs.zip
+      format: zip
+    ignore_errors: yes
+  - name: collect logs
+    fetch:
+      src: /tmp/logs/tcpstat.csv
+      dest: "{{ user_dir }}/logs/attack_rate_measurements/{{ attack_vector }}/{{ attacker_busywait }}.csv"
+      flat: yes
+    ignore_errors: yes
