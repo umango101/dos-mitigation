@@ -1,6 +1,7 @@
 # Tools for DoS mitigation research
 
-Author: Samuel DeLaughter
+Author: Samuel DeLaughter\
+
 License: MIT
 
 ## Overview
