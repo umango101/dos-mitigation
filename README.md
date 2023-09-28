@@ -12,7 +12,7 @@ This code is intended for research purposes only.  Please use it responsibly.
 
 ## Merge Setup
 
-These instructions assume you have already materialized an [experiment] in Merge (https://mergetb.org/docs/experimentation/hello-world/), connected it to an [XDC](https://mergetb.org/docs/experimentation/xdc/), and installed the [Merge CLI](https://gitlab.com/mergetb/portal/cli) on that XDC.
+These instructions assume you have already materialized an [experiment in Merge](https://mergetb.org/docs/experimentation/hello-world/), connected it to an [XDC](https://mergetb.org/docs/experimentation/xdc/), and installed the [Merge CLI](https://gitlab.com/mergetb/portal/cli) on that XDC.
 The following steps should need to be done infrequently, when first setting up a new experiment and XDC.  Step 8 will need to be repeated anytime you make changes to this repository that you want to be reflected on testbed devices.
 
 1. Clone (a fork of) this respository to your XDC, at `~/dos-mitigation`
