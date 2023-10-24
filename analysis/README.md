@@ -14,7 +14,7 @@ For very quick analysis and debugging purposes, you can use [csv_to_tps.py](csv_
 
 ## Setup
 
-*tested on Ubuntu 22.04*s
+*tested on Ubuntu 22.04*
 
 1. Run `sudo db_setup.sh` to install dependencies, start a Postgres database service, and delete the postgres user's password to simplify interaction with the database (if you're concerned with data security you will probably want to modify this setup procedure).
 
