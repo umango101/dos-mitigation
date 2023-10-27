@@ -52,22 +52,28 @@ struct pseudo_header {
 };
 
 struct quichdr {
-    uint8_t header_form : 1 = 1; // Header Form (1) = 1,
-    uint8_t fixed_bit : 1 = 1;// Fixed Bit (1) = 1,
-    uint8_t long_packet_type : 2 = 0;// Long Packet Type (2) = 0,
-    uint8_t reserved_bits : 2 = 0; // Reserved Bits (2),
-    uint8_t packet_number_length : 2 = 0; // Packet Number Length (2),
-    uint32_t version = 0;// Version (32),
-    uint8_t dest_conn_id_len = 8; // Destination Connection ID Length (8),
-    uint64_t dest_conn_id = 0; // Destination Connection ID (0..160),
-    uint8_t src_conn_id_len = 8; // Source Connection ID Length (8),
-    uint64_t src_conn_id = 0; // Source Connection ID (0..160),
-    uint8_t token_length = 0; // Token Length (i),
-    // uint64_t token = 0; // Token (..),
-    uint32_t length = 1200; // Length (i),
-    uint32_t packet_number = 0; // Packet Number (8..32),
-    char* payload; // Packet Payload (8..),
-}
+    uint8_t header_form : 1; // Header Form (1) = 1,
+    uint8_t fixed_bit : 1;// Fixed Bit (1) = 1,
+    uint8_t long_packet_type : 2;// Long Packet Type (2) = 0,
+    uint8_t reserved_bits : 2; // Reserved Bits (2),
+    uint8_t packet_number_len : 2; // Packet Number Length (2),
+    uint32_t version;// Version (32),
+    uint8_t dest_conn_id_len; // Destination Connection ID Length (8),
+    uint8_t dest_conn_id; // Destination Connection ID (0..160),
+    uint8_t src_conn_id_len; // Source Connection ID Length (8),
+    uint8_t src_conn_id; // Source Connection ID (0..160),
+    uint8_t token_len; // Token Length (i),
+    // uint64_t token; // Token (..),
+    uint32_t len; // Length (i),
+    uint8_t packet_number; // Packet Number (8..32),
+};
+
+struct quic_crypto {
+	uint8_t frame_type;
+	uint8_t offset;
+	uint8_t len;
+	uint8_t crypto_data;
+};
 
 static void update_ip_csum(struct iphdr* iph, __be32 old_saddr) {
 	// Experimental, beware
@@ -224,8 +230,9 @@ int main(int argc, char *argv[]) {
 
 	// Initialize headers
 	struct iphdr *iph = (struct iphdr *) datagram;
-	struct udphdr *udph = (struct udphdr *) (datagram + sizeof (struct ip));
-    struct quic_header *quich = datagram + sizeof(struct iphdr) + sizeof(struct udphdr);
+	struct udphdr *udph = (struct udphdr *) (datagram + sizeof(struct iphdr));
+    struct quichdr *quich = (struct quichdr *) (datagram + sizeof(struct iphdr) + sizeof(struct udphdr));
+	struct quic_crypto *crypto_frame = (struct quichdr *) (datagram + sizeof(struct iphdr) + sizeof(struct udphdr) + sizeof(struct quichdr));
 	struct pseudo_header psh;
 
 	// UDP Payload
@@ -253,29 +260,34 @@ int main(int argc, char *argv[]) {
 	// IP checksum
 	iph->check = csum ((unsigned short *) datagram, iph->tot_len);
 
+	// QUIC Header
+    quich->header_form = 1;
+    quich->fixed_bit = 1;
+    quich->long_packet_type = 0;
+    quich->reserved_bits = 0;
+    quich->packet_number_len = 1;
+    quich->version = 0;
+    quich->dest_conn_id_len = 1;
+    quich->dest_conn_id = 0;
+    quich->src_conn_id_len = 1;
+    quich->src_conn_id = 0;
+    quich->token_len = 0;
+    // quich. token = 0; // Token (..),
+    quich->len = 1200; // Initial packets must be padded to 1200 bytes
+    quich->packet_number = 0;
+
+	crypto_frame->frame_type = 0x06;
+	crypto_frame->offset = 0;
+	crypto_frame->len = 1;
+	crypto_frame->crypto_data = 0;
+
 	// UDP Header
 	udph->source = htons(default_src_port);
 	udph->dest = sin.sin_port;
-	udph->len = htons(sizeof(struct udphdr) + strlen(data));
+	udph->len = htons(sizeof(struct udphdr) + quich->len);
 	udph->check = 0;
 
-    // QUIC Header
-    quich.header_form : 1 = 1; // Header Form (1) = 1,
-    quich.fixed_bit : 1 = 1;// Fixed Bit (1) = 1,
-    quich.long_packet_type : 2 = 0;// Long Packet Type (2) = 0,
-    quich.reserved_bits : 2 = 0; // Reserved Bits (2),
-    quich.packet_number_length : 2 = 0; // Packet Number Length (2),
-    quich.version = 0;// Version (32),
-    quich.dest_conn_id_len = 64; // Destination Connection ID Length (8),
-    quich.dest_conn_id = 0; // Destination Connection ID (0..160),
-    quich.src_conn_id_len = 64; // Source Connection ID Length (8),
-    quich.src_conn_id = 0; // Source Connection ID (0..160),
-    quich.token_length = 0; // Token Length (i),
-    // quich. token = 0; // Token (..),
-    quich.length = sizeof(quich); // Length (i),
-    quich.packet_number = 0; // Packet Number (8..32),
-    // quich.payload; // Packet Payload (8..),
-
+    
 	// UDP checksum
 	psh.source_address = inet_addr(default_src_addr);
 	psh.dest_address = sin.sin_addr.s_addr;
