@@ -21,14 +21,14 @@ The following steps should need to be done infrequently, when first setting up a
 4. `sudo chown -R $USER dos-mitigation`
 5. `sudo chgrp -R $USER dos-mitigation`
 6. `cd dos-mitigation`
-7. Update `settings` with your own credentials and testbed settings
-8. `sudo ./xdc_setup.sh`
+7. `sudo ./xdc_setup.sh`
+8. Update `settings` with your own credentials and testbed settings.  At minimum you'll need to set the following: `MRG_USER, MRG_PROJECT, MRG_EXPERIMENT, MRG_MATERIALIZATION`
 9. `source settings`
 10. Run `mrg login $MRG_USER` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
 11. Run `./inventory_gen.sh` to build inventory files listing the devices in your network.
 12. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
-13. Run `./play push_common` to push common files to testbed devices.
-14. Run `./play depends` to install dependencies on testbed devices.  This will also run the `push_common.yml` playbook which copies repository files to testbed devices.  If you make changes to this code later, run `play push_common` to propagate them.
+13. Run `./play push_common` to push common files to testbed devices.  If you ever add or modify files in the `common` directory, you'll need to run this playbook again to propagate them to your nodes (for example, if you want to add a new attack type).
+14. Run `./play depends` to install dependencies on testbed devices.
 15. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
 
 ## Running Experiments
