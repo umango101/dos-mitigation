@@ -4,3 +4,4 @@
     - name: compile attack programs
       shell: gcc {{ item }} -o {{ item | splitext | first }}
       with_fileglob: "{{ user_dir }}/common/attacks/*.c"
+      become: yes

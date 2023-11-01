@@ -1,16 +1,20 @@
 #!/bin/bash
+
+if [ ! -f .settings ]; then
+    cp settings .settings
+fi
 source .settings
 
 cp mrg_hosts hosts
 cp mrg_etchosts etchosts
 echo "[active_clients]" >> hosts
 for (( i=0; i<n_clients; i++ )); do
-   echo "c$i" >> hosts
+    echo "c$i" >> hosts
 done
 
 echo "[active_attackers]" >> hosts
 for (( i=0; i<n_attackers; i++ )); do
-   echo "a$i" >> hosts
+    echo "a$i" >> hosts
 done
 
 echo "[syn_pow_verifier]" >> hosts
