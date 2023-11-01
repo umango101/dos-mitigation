@@ -66,6 +66,7 @@
       failed_when:
         - result.rc != 0
         - '"No such process" not in result.stderr'
+      ignore_errors: yes
 
 
 - name: configure sink to drop outbound traffic
