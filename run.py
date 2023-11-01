@@ -14,7 +14,7 @@ print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
 
 log_dir = "logs/{}".format(session)
-os.mkdir(log_dir)
+os.makedirs(log_dir)
 param_file = "{}/.parameters.json".format(log_dir)
 shutil.copyfile("parameters.json", param_file)
 with open(param_file) as f:

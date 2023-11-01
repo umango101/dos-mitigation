@@ -15,18 +15,26 @@ This code is intended for research purposes only.  Please use it responsibly.
 These instructions assume you have already materialized an [experiment in Merge](https://mergetb.org/docs/experimentation/hello-world/), connected it to an [XDC](https://mergetb.org/docs/experimentation/xdc/), and installed the [Merge CLI](https://gitlab.com/mergetb/portal/cli) on that XDC.
 The following steps should need to be done infrequently, when first setting up a new experiment and XDC.  Step 8 will need to be repeated anytime you make changes to this repository that you want to be reflected on testbed devices.
 
-1. Clone (a fork of) this respository to your XDC, at `~/dos-mitigation`
-2. `ssh` to your XDC and run `cd ~/dos-mitigation` to enter the directory
-3. Update `settings` with your own credentials and testbed settings
-4. Run `sudo xdc_setup.sh` to install dependencies and configure the XDC
-5. Run `mrg login [your Merge username]` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
-6. Run `inventory_gen.sh` to build inventory files listing the devices in your network.
-7. Run `play depends` to install dependencies on testbed devices.  This will also run the `push_common.yml` playbook which copies repository files to testbed devices.  If you make changes to this code later, run `play push_common` to propagate them.
+1. SSH to your XDC
+2. `cd /usr/local`
+3. Run `sudo -E git clone git@github.com:sdelaughter/dos-mitigation.git` to clone this repository.  You'll need sudo to write in `/usr/local`, and the `-E` flag will preserve your environment variables with sudo (including SSH keys).
+4. `sudo chown -R $USER dos-mitigation`
+5. `sudo chgrp -R $USER dos-mitigation`
+6. `cd dos-mitigation`
+7. Update `settings` with your own credentials and testbed settings
+8. `sudo ./xdc_setup.sh`
+9. `source settings`
+10. Run `mrg login $MRG_USER` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
+11. Run `./inventory_gen.sh` to build inventory files listing the devices in your network.
+12. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
+13. Run `./play push_common` to push common files to testbed devices.
+14. Run `./play depends` to install dependencies on testbed devices.  This will also run the `push_common.yml` playbook which copies repository files to testbed devices.  If you make changes to this code later, run `play push_common` to propagate them.
+15. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
 
 ## Running Experiments
 
-1. `ssh` to your XDC and run `cd ~/dos-mitigation` to enter the directory
-2. Optionally, run `play ping` to ensure that all devices in your network are up and able to reach the server.  You can also use `play debug` to view detailed information about each device.
+1. `ssh` to your XDC and run `cd /usr/local/dos-mitigation` to enter the directory
+2. Optionally, run `./play ping` to ensure that all devices in your network are up and able to reach the server.  You can also use `play debug` to view detailed information about each device.
 3. Update `parameters.json` with the set of variables you want to test in a session of experiments.  The format is a dictionary in which keys are parameter names and values are a list of list of corresponding parameter values.  All possible combinations will be tested by `run.py`, such that this dictionary...
     ```
     {
@@ -44,7 +52,7 @@ The following steps should need to be done infrequently, when first setting up a
     foo=1, bar="b"
     ```
 4. Run `mrg login [your Merge username]` to make sure you're logged in.
-5. Run `python3 ./run.py session_name` to run a set of experiments.  Results will be stored in `~/dos-mitigation/logs/session_name`.  Except when debugging, it's recommended to run this command via `screen` so that you can close the SSH session without disrupting long-running experiments, and return later to check on the results.  So, run `screen python3 ./run.py session_name` to start experiments, then press `Ctrl-A-D` to detach the screen and run `screen -r` to reattach it.<br>For each set of experiment parameters, as described above, `run.py` will create a new temporary `.settings` file, concatenating `settings` and the `hosts` inventory file (note that some additional settings are added via `inventory_update.sh` -- in a future version these will hopefully be moved to the model file and captured automatically at inventory generation).  Results for each experiment will be stored in a subdirectory of `~/dos-mitigation/logs/session_name`, named with a timestamp indicating when that experiment began.
+5. Run `python3 ./run.py session_name` to run a set of experiments.  Results will be stored in `/usr/local/dos-mitigation/logs/session_name`.  Except when debugging, it's recommended to run this command via `screen` so that you can close the SSH session without disrupting long-running experiments, and return later to check on the results.  So, run `screen python3 ./run.py session_name` to start experiments, then press `Ctrl-A-D` to detach the screen and run `screen -r` to reattach it.<br>For each set of experiment parameters, as described above, `run.py` will create a new temporary `.settings` file, concatenating `settings` and the `hosts` inventory file (note that some additional settings are added via `inventory_update.sh` -- in a future version these will hopefully be moved to the model file and captured automatically at inventory generation).  Results for each experiment will be stored in a subdirectory of `/usr/local/dos-mitigation/logs/session_name`, named with a timestamp indicating when that experiment began.
 
 ## Common Files
 

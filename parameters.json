@@ -4,10 +4,10 @@
   "attack_type": ["syn_flood"],
   "mitigation": ["syn_pow_8"],
   "bottleneck_latency": [1],
-  "bottleneck_capacity": [100, 1000],
+  "bottleneck_capacity": [1000],
   "attacker_busywait": [0],
   "attacker_cpu_limit": [100, 10],
-  "n_clients": [12],
+  "n_clients": [1],
   "n_attackers": [1],
   "syn_pow_verifier": ["s0"]
 }

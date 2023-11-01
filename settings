@@ -4,12 +4,12 @@ MRG_PROJECT=project_name
 MRG_EXPERIMENT=experiment_name
 MRG_MATERIALIZATION=materialization_name
 bare_metal=true
-user_dir="/home/$MRG_USER/dos-mitigation"
+user_dir="/usr/local/dos-mitigation"
 control_gw_a=172.30.0.1
 control_gw_b=172.29.0.1
 
-server_name=exp_s0
-sink_name=exp_sink0
+server_name=s0
+sink_name=sink0
 server_port=80
 
 client_duration=30
