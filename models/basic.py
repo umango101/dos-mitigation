@@ -35,6 +35,6 @@ routers[0].properties['group'].append('firewall')
 
 main_lan = net.connect([routers[0]] + clients + attackers + sinks)
 server_link = net.connect([routers[0], servers[0]], capacity == mbps(bottleneck_capacity), latency == ms(bottleneck_latency))
-server_link.properties["tags"] = ('bottleneck')
+server_link.properties["tags"] = ['bottleneck']
 
 experiment(net)
