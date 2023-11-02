@@ -35,4 +35,4 @@
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
     - name: test client-server connection
-      shell: /usr/local/dos_mitigation/common/clients/http3_test.sh s0
+      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }}
