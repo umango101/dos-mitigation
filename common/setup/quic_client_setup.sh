@@ -1,5 +1,5 @@
 sudo apt update
-sudo apt install autoconf pkg-config
+yes | sudo apt install autoconf git libtool make pkg-config
 
 cd
 git clone --depth 1 -b openssl-3.1.4+quic https://github.com/quictls/openssl
@@ -35,4 +35,7 @@ LDFLAGS="-Wl,-rpath,$HOME/openssl/build/lib64" ./configure --with-openssl=$HOME/
 make
 sudo make install
 
-sudo ldconifg
+sudo ldconfig
+
+cd
+curl --http3-only https://cloudflare-quic.com -o quic-test.html

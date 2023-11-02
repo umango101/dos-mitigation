@@ -2,5 +2,5 @@
   hosts: {{ hostgroup }}
   tasks:
   - name: run command {{ cmd }}
-    shell: {{ cmd }}
-    become: {{ sudo }}
+    shell: "{{ cmd }}"
+    become: "{{ sudo }}"
