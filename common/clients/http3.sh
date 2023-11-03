@@ -3,7 +3,7 @@
 # Simple HTTP-3/QUIC Client
 
 server_ip=$1
-server_port=8443
+server_port=443
 request_interval=$2
 file_size=$3
 
