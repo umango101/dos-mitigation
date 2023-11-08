@@ -60,6 +60,7 @@ CREATE TABLE "results" (
   "threat_pct" float,
   "damage_pct" float,
   "efficacy_pct" float,
+  "efficacy_pct_threat" float,
   "overhead_pct" float
 );
 

@@ -171,3 +171,6 @@ mrg_etchosts
 settings
 .settings
 parameters.json
+.venv
+data
+figures
