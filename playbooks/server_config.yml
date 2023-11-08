@@ -1,12 +1,13 @@
 - name: setup server
   hosts: server
   tasks:
-  - name: Enable Apache2
+  - name: Enable Nginx
     systemd:
-      name: apache2
+      name: nginx
       state: started
       daemon_reload: yes
     become: yes
+
   - name: Delete old HTTP junk directory
     become: yes
     file:

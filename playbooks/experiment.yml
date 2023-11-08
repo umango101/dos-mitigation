@@ -44,9 +44,9 @@
 - hosts: server
   gather_facts: no
   tasks:
-  - name: restart apache2
+  - name: restart nginx
     systemd:
-      name: apache2
+      name: nginx
       state: restarted
       daemon_reload: yes
     become: yes
@@ -128,9 +128,9 @@
 - hosts: server
   gather_facts: no
   tasks:
-  - name: restart apache2
+  - name: restart nginx
     systemd:
-      name: apache2
+      name: nginx
       state: restarted
       daemon_reload: yes
     become: yes
@@ -183,9 +183,9 @@
 - hosts: server
   gather_facts: no
   tasks:
-  - name: restart apache2
+  - name: restart nginx
     systemd:
-      name: apache2
+      name: nginx
       state: restarted
       daemon_reload: yes
     become: yes
@@ -267,9 +267,9 @@
 - hosts: server
   gather_facts: no
   tasks:
-  - name: restart apache2
+  - name: restart nginx
     systemd:
-      name: apache2
+      name: nginx
       state: restarted
       daemon_reload: yes
     become: yes
