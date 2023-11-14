@@ -23,4 +23,4 @@
 #       name: apache2
 #     become: yes
 
-- import_playbook: "quick_setup.yml"
+- import_playbook: "quic_setup.yml"
