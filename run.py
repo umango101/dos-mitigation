@@ -9,18 +9,19 @@ import sys
 
 session = sys.argv[1]
 tmp_log_path = "/tmp/ansible.log"
+code_dir = "/usr/local/dos-mitigation"
 
 print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
 
-log_dir = "/usr/local/dos-mitigation/logs/{}".format(session)
+log_dir = "{}/logs/{}".format(code_dir, session)
 os.makedirs(log_dir)
 param_file = "{}/.parameters.json".format(log_dir)
-shutil.copyfile("parameters.json", param_file)
+shutil.copyfile("{}/parameters.json".format(code_dir), param_file)
 with open(param_file) as f:
   params = json.load(f)
 
-with open('mitigated_attack_types.json') as f:
+with open('{}/mitigated_attack_types.json'.format(code_dir)) as f:
   mitigated_attack_types = json.load(f)
 
 keys, values = zip(*params.items())
@@ -48,8 +49,8 @@ for p in expanded_permutations:
   print("Starting experiment {}/{} at time {} with the following parameters:".format(i, n_permutations, timestamp))
   pprint(p)
 
-  shutil.copyfile("settings", ".settings")
-  with open(".settings", "a") as f:
+  shutil.copyfile("{}/settings".format(code_dir), "{}/.settings".format(code_dir))
+  with open("{}.settings".format(code_dir), "a") as f:
     for k, v in p.items():
       f.write("{}={}\n".format(k, v))
     f.write("session={}\n".format(session))
@@ -60,6 +61,6 @@ for p in expanded_permutations:
   except FileNotFoundError:
     pass
   
-  subprocess.run(["./inventory_update.sh"])
-  subprocess.run(["./play", "experiment", "timestamp={} mitigation={}".format(timestamp, mitigation)])
+  subprocess.run(["{}/inventory_update.sh".format(code_dir)])
+  subprocess.run(["{}/play".format(code_dir), "experiment", "timestamp={} mitigation={}".format(timestamp, mitigation)])
   subprocess.run(["mv", tmp_log_path, "{}/{}/.ansible.log".format(log_dir, timestamp)])
