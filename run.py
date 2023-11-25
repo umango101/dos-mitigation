@@ -13,7 +13,7 @@ tmp_log_path = "/tmp/ansible.log"
 print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
 
-log_dir = "logs/{}".format(session)
+log_dir = "/usr/local/dos-mitigation/logs/{}".format(session)
 os.makedirs(log_dir)
 param_file = "{}/.parameters.json".format(log_dir)
 shutil.copyfile("parameters.json", param_file)
