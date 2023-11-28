@@ -50,7 +50,7 @@ for p in expanded_permutations:
   pprint(p)
 
   shutil.copyfile("{}/settings".format(code_dir), "{}/.settings".format(code_dir))
-  with open("{}.settings".format(code_dir), "a") as f:
+  with open("{}/.settings".format(code_dir), "a") as f:
     for k, v in p.items():
       f.write("{}={}\n".format(k, v))
     f.write("session={}\n".format(session))
