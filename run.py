@@ -8,8 +8,9 @@ import subprocess
 import sys
 
 session = sys.argv[1]
-tmp_log_path = "/tmp/ansible.log"
+
 code_dir = "/usr/local/dos-mitigation"
+tmp_log_path = "{}/ansible.log".format(code_dir)
 
 print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
