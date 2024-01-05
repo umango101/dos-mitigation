@@ -21,17 +21,18 @@ The following steps should need to be done infrequently, when first setting up a
 4. `sudo chown -R $USER dos-mitigation`
 5. `sudo chgrp -R $USER dos-mitigation`
 6. `cd dos-mitigation`
-7. `sudo ./xdc_setup.sh`
-8. `cp settings_template settings`
-9. Update `settings` with your own credentials and testbed settings.  At minimum you'll need to set the following: `MRG_USER, MRG_PROJECT, MRG_EXPERIMENT, MRG_MATERIALIZATION`
+9. `sudo ./xdc_setup.sh`
+7. `cp settings_template settings`
+8. Update `settings` with your own credentials and testbed settings.  At minimum you'll need to set the following: `MRG_USER, MRG_PROJECT, MRG_EXPERIMENT, MRG_MATERIALIZATION`
 10. `source settings`
-11. Run `mrg login $MRG_USER` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
-12. Run `./inventory_gen.sh` to build inventory files listing the devices in your network.
-13. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
-14. Run `./play push_common` to push common files to testbed devices.  If you ever add or modify files in the `common` directory, you'll need to run this playbook again to propagate them to your nodes (for example, if you want to add a new attack type).
-15. Run `./play depends` to install dependencies on testbed devices.
-16. If you want to experiment with HTTP/3 over QUIC, run `./play quic_setup`.  This is separated from the main dependencies because it take a considerable amount of time to run (it needs to build a custom version of OpenSSL from source).  Note that this will currently break the regular HTTP clients becuase it replaces the Apache server with an NGINX server.  This will likely be updated soon to make NGINX the default, with support for both HTTP/2 and HTTP/3.
-17. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
+11. `mrg config set server $MRG_SERVER`
+12. Run `mrg login $MRG_USER` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
+13. Run `./inventory_gen.sh` to build inventory files listing the devices in your network.
+14. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
+15. Run `./play push_common` to push common files to testbed devices.  If you ever add or modify files in the `common` directory, you'll need to run this playbook again to propagate them to your nodes (for example, if you want to add a new attack type).
+16. Run `./play depends` to install dependencies on testbed devices.
+17. If you want to experiment with HTTP/3 over QUIC, run `./play quic_setup`.  This is separated from the main dependencies because it take a considerable amount of time to run (it needs to build a custom version of OpenSSL from source).  Note that this will currently break the regular HTTP clients becuase it replaces the Apache server with an NGINX server.  This will likely be updated soon to make NGINX the default, with support for both HTTP/2 and HTTP/3.
+18. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
 
 ## Running Experiments
 
