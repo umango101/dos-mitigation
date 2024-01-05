@@ -23,9 +23,11 @@
       update_cache: yes
     become: yes
 
-- hosts: server
-  tasks:
-  - name: install server dependencies
-    apt:
-      name: apache2
-    become: yes
+# - hosts: server
+#   tasks:
+#   - name: install server dependencies
+#     apt:
+#       name: apache2
+#     become: yes
+
+- import_playbook: "quic_setup.yml"

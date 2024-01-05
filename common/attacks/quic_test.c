@@ -313,42 +313,40 @@ int main(int argc, char *argv[]) {
 	__be32 old_saddr;
 	__be32 new_saddr;
 
-	// Generate packets forever, the caller must terminate this program manually
-	while(1) {
-		#if RAND_SRC_ADDR || RAND_SRC_PORT
-			#if RAND_SRC_ADDR
-			// Generate a new random source IP, excluding certain prefixes
-				new_saddr = (__be32)(random_ipv4());
-			#endif
-
-			#if RAND_SRC_PORT
-				udph->source = random_port();
-			#endif
-
-			iph->check = 0;
-			iph->saddr = new_saddr;
-			iph->check = csum ((unsigned short *) datagram, iph->tot_len);
-
-			udph->check = 0;
-			psh.source_address = new_saddr;
-			memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-			memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr) + QUIC_PACKET_SIZE);
-			udph->check = csum( (unsigned short*) pseudogram , psize);
+	// Generate a single packet
+	#if RAND_SRC_ADDR || RAND_SRC_PORT
+		#if RAND_SRC_ADDR
+		// Generate a new random source IP, excluding certain prefixes
+			new_saddr = (__be32)(random_ipv4());
 		#endif
 
-		//Send the packet
-		if (sendto (s, datagram, iph->tot_len ,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
-			perror("Error sending packet");
-		}
-
-		#if DEBUG > 1
-			printf("Sent packet from %s:%u to %s:%u\n", iph->saddr, udph->source, iph->daddr, udph->dest);
+		#if RAND_SRC_PORT
+			udph->source = random_port();
 		#endif
 
-		#if DELAY
-			sleep(DELAY);
-		#endif
+		iph->check = 0;
+		iph->saddr = new_saddr;
+		iph->check = csum ((unsigned short *) datagram, iph->tot_len);
+
+		udph->check = 0;
+		psh.source_address = new_saddr;
+		memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
+		memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr) + QUIC_PACKET_SIZE);
+		udph->check = csum( (unsigned short*) pseudogram , psize);
+	#endif
+
+	//Send the packet
+	if (sendto (s, datagram, iph->tot_len ,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
+		perror("Error sending packet");
 	}
+
+	#if DEBUG > 1
+		printf("Sent packet from %s:%u to %s:%u\n", iph->saddr, udph->source, iph->daddr, udph->dest);
+	#endif
+
+	#if DELAY
+		sleep(DELAY);
+	#endif
 
 	return 0;
 }

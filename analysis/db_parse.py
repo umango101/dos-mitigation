@@ -8,7 +8,7 @@ from pprint import pprint
 from datetime import datetime
 
 
-log_dir = "data"
+log_dir = "/usr/local/dos-mitigation/data"
 db_name = "dos"
 
 maximize_metrics = ['Transaction Status', "Transactions per Second"]
@@ -235,21 +235,25 @@ def analyze_experiment(conn: dbh.Connection, experiment):
                 damage = UB - MA
                 overhead = UB - MB
 
+            
+
+            if threat <= 0:
+                efficacy = 0
+                efficacy_pct_threat = 0
+            else:
+                efficacy = threat - damage
+                efficacy_pct_threat = (efficacy / threat) * 100.0
+
             if baseline == 0:
                 damage_pct = 0
                 threat_pct = 0
                 overhead_pct = 0
+                efficacy_pct = 0
             else:
                 damage_pct = (damage / baseline) * 100.0
                 threat_pct = (threat / baseline) * 100.0
                 overhead_pct = (overhead / baseline) * 100.0
-
-            if threat <= 0:
-                efficacy = 0
-                efficacy_pct = 0
-            else:
-                efficacy = threat - damage
-                efficacy_pct = (efficacy / threat) * 100.0
+                efficacy_pct = (efficacy / baseline) * 100.0
 
             result_row = {
                 "experiment": experiment_id,
@@ -266,6 +270,7 @@ def analyze_experiment(conn: dbh.Connection, experiment):
                 "threat_pct": threat_pct,
                 "damage_pct": damage_pct,
                 "efficacy_pct": efficacy_pct,
+                "efficacy_pct_threat": efficacy_pct_threat,
                 "overhead_pct": overhead_pct
             }
             conn.insert_dict_as_row("results", result_row)

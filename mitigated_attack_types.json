@@ -12,6 +12,7 @@
     "syn_flood": ["syn_flood", "syn_flood_pow_32"]
   },
   "syn_cookies": {
-    "syn_flood": ["syn_flood"]
+    "syn_flood": ["syn_flood"],
+    "quic_flood": ["quic_flood"]
   }
 }
