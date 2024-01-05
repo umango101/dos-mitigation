@@ -28,23 +28,16 @@ with open('{}/mitigated_attack_types.json'.format(code_dir)) as f:
 keys, values = zip(*params.items())
 permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-expanded_permutations = []
 for p in permutations:
-  mitigation = p['mitigation']
-  attack_type = p['attack_type']
-  mitigated_attack_set = [attack_type]
-  if mitigation in mitigated_attack_types:
-    if attack_type in mitigated_attack_types[mitigation]:
-      mitigated_attack_set = mitigated_attack_types[mitigation][attack_type]
-  for mitigated_attack_type in mitigated_attack_set:
-    new_p = p.copy()
-    new_p["mitigated_attack_type"] = mitigated_attack_type
-    expanded_permutations.append(new_p)
+  attack_type = p['attack_mitigation_pair'][0]
+  mitigation = p['attack_mitigation_pair'][1]
+  p['attack_type'] = attack_type
+  p['mitigation'] = mitigation
 
-n_permutations = len(expanded_permutations)
+n_permutations = len(permutations)
 print("Testing {} different permutations of experiment parameters".format(n_permutations))
 i=0
-for p in expanded_permutations:
+for p in permutations:
   i += 1
   timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
   print("Starting experiment {}/{} at time {} with the following parameters:".format(i, n_permutations, timestamp))
