@@ -18,14 +18,6 @@
     file:
       path: /var/www/html/junk
       state: directory
-  - name: Create junk files for HTTP client
-    shell: head -c {{ item }} </dev/urandom >/var/www/html/junk/{{ item }}
+  - name: Create junk file for HTTP client
+    shell: head -c {{ file_size }} </dev/urandom >/var/www/html/junk/{{ file_size }}
     become: yes
-    loop:
-        - 1K
-        - 10K
-        - 100K
-        - 1M
-        - 10M
-        - 100M
-        - 1G

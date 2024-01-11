@@ -1,6 +1,7 @@
 {
   "client_interval": [0.0],
-  "client_app": ["tcp"],
+  "client_app": ["tcp", "http", "http3"],
+  "file_size": ["1K", "1M"],
   "attack_mitigation_pair": [
     ["syn_flood", "syn_cookies"],
     ["quic_prebuilt", "quic_retry"]

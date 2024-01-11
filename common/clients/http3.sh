@@ -9,7 +9,7 @@ file_size=$3
 
 log_dir=/tmp/logs/
 mkdir -p $log_dir
-log_file="$log_dir/http.csv"
+log_file="$log_dir/http3.csv"
 
 remote_path="junk/$file_size"
 url="https://$server_ip:$server_port/$remote_path"

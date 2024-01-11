@@ -3,16 +3,16 @@
 # Simple HTTP Client
 
 server_ip=$1
-server_port=80
+server_port=443
 request_interval=$2
-file_size="1K"
+file_size=$3
 
 log_dir=/tmp/logs/
 mkdir -p $log_dir
 log_file="$log_dir/http.csv"
 
 remote_path="junk/$file_size"
-url="$server_ip:$server_port/$remote_path"
+url="https://$server_ip:$server_port/$remote_path"
 
 echo "status, start, end" >$log_file
 while true; do

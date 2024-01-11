@@ -10,7 +10,7 @@ This repository contains versions of the tools I developed for Denial-of-Service
 
 This code is intended for research purposes only.  Please use it responsibly.
 
-## Merge Setup
+## Setup
 
 These instructions assume you have already materialized an [experiment in Merge](https://mergetb.org/docs/experimentation/hello-world/), connected it to an [XDC](https://mergetb.org/docs/experimentation/xdc/), and installed the [Merge CLI](https://gitlab.com/mergetb/portal/cli) on that XDC.
 
@@ -41,7 +41,7 @@ Anytime you create a new materialization, follow these steps to configure it:
 11. Run `./play depends` to install dependencies on testbed devices.  This will take a considerable amount of time to run -- it needs to build OpenSSL from source in order to support HTTP3/QUIC.
 12. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
 
-### Running Experiments
+## Running Experiments
 
 Follow these steps when you want to run a set of experiments:
 1. SSH to your XDC
@@ -81,7 +81,7 @@ The `attack_mitigation_pair` key corresponds to a list of lists, in the form:
 ]
 ```
 
-Each attack/mitigation pair listed will be treated as a parameter value to test in combination with the rest, as described above.
+Each attack/mitigation pair listed will be treated as a single parameter value to test in combination with the rest, as described above.
 
 ## Common Files
 

@@ -1,0 +1,14 @@
+- name: Disable QUIC Retry at Server
+  hosts: server
+  tasks:
+    - name: Edit nginx config file
+      replace:
+        path: /usr/local/nginx/conf/nginx.conf
+        regexp: 'quic_retry on'
+        replace: 'quic_retry off'
+    - name: Restart nginx server
+      systemd:
+        name: nginx
+        state: started
+        daemon_reload: yes
+      become: yes
