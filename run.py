@@ -19,7 +19,7 @@ log_dir = "{}/logs/{}".format(code_dir, session)
 
 if os.path.exists(log_dir):
   action = input("Session with name '" + str(session) + "' already exists\n" + 
-                  "(E)xit / (o)verwrite / (i)ncrement"
+                  "(E)xit / (o)verwrite / (i)ncrement\n"
   )
   action = action.strip().lower()
   if action in ['o', 'overwrite']:
