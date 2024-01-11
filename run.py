@@ -16,7 +16,26 @@ print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
 
 log_dir = "{}/logs/{}".format(code_dir, session)
-os.makedirs(log_dir)
+
+if os.path.exists(log_dir):
+  action = input("Session with name '" + str(session) + "' already exists\n" + 
+                  "(E)xit / (o)verwrite / (i)ncrement"
+  )
+  action = action.strip().lower()
+  if action in ['o', 'overwrite']:
+    shutil.rmtree(log_dir, ignore_errors=True)
+    os.makedirs(log_dir)
+  elif action in ['i', 'increment']:
+    i=0
+    while os.path.exists(log_dir + "_" + str(i)):
+      i += 1
+    log_dir = log_dir + "_" + str(i)
+    os.makedirs(log_dir)
+  else:
+    print('Exiting')
+    sys.exit()
+
+
 param_file = "{}/.parameters.json".format(log_dir)
 shutil.copyfile("{}/parameters.json".format(code_dir), param_file)
 with open(param_file) as f:
