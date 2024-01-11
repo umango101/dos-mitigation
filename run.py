@@ -33,6 +33,10 @@ for p in permutations:
   mitigation = p['attack_mitigation_pair'][1]
   p['attack_type'] = attack_type
   p['mitigation'] = mitigation
+  if len(p['attack_mitigation_pair']) > 2:
+    p['mitigated_attack_type'] = p['attack_mitigation_pair'][2]
+  else:
+    p['mitigated_attack_type'] = attack_type
 
 n_permutations = len(permutations)
 print("Testing {} different permutations of experiment parameters".format(n_permutations))
@@ -48,7 +52,6 @@ for p in permutations:
     for k, v in p.items():
       f.write("{}={}\n".format(k, v))
     f.write("session={}\n".format(session))
-    f.write("mitigated_attack_type={}".format(p["mitigated_attack_type"]))
 
   try:
     os.remove(tmp_log_path)

@@ -81,7 +81,7 @@ The `attack_mitigation_pair` key corresponds to a list of lists, in the form:
 ]
 ```
 
-Each attack/mitigation pair listed will be treated as a single parameter value to test in combination with the rest, as described above.
+Each attack/mitigation pair listed will be treated as a single parameter value to test in combination with the rest, as described above.  The `attack_mitigation_pair` parameter also supports an optional third value, to specify an alternate attack to be launched when the mitigation is deployed.  If only two values are provided, the initial attack value will be used for both mitigated and unmitigated attacks.
 
 ## Common Files
 

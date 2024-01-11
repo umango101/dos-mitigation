@@ -16,16 +16,8 @@
         path: /var/www/html/junk
         state: directory
     - name: Create junk files for HTTP client
-      shell: head -c {{ item }} </dev/urandom >/var/www/html/junk/{{ item }}
+      shell: head -c 1K </dev/urandom >/var/www/html/junk/1K
       become: yes
-      loop:
-          - 1K
-          - 10K
-          - 100K
-          - 1M
-          - 10M
-          - 100M
-          - 1G
 
 - name: install curl client
   hosts: client
