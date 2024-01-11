@@ -17,7 +17,7 @@ url="https://$server_ip:$server_port/$remote_path"
 echo "status, start, end" >$log_file
 while true; do
     start="$(date +%s%N)"
-    curl -k --http3-only -s --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk
+    curl -s -k --http3-only --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk
     ok=$?
     end="$(date +%s%N)"
     echo "$ok,$start,$end" >>$log_file
