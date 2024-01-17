@@ -1,5 +1,5 @@
 sudo apt update
-yes | sudo apt install autoconf git libtool make pkg-config
+yes | sudo apt install autoconf git libtool make pkg-config libpsl-dev
 
 cd
 git clone --depth 1 -b openssl-3.1.4+quic https://github.com/quictls/openssl
