@@ -1,12 +1,14 @@
 {
   "client_interval": [0.0],
   "client_app": ["tcp", "http", "https", "http3"],
-  "file_size": ["1K", "1M"],
+  "file_size": ["100", "1000", "10000"],
   "attack_mitigation_pair": [
     ["syn_flood", "syn_cookies"],
-    ["quic_prebuilt", "quic_retry"]
+    ["quic_prebuilt", "quic_retry"],
+    ["quic_curl", "quic_retry"]
   ],
-  "bottleneck_latency": [1],
+  "bottleneck_latency": [1, 5],
+  "bottleneck_loss": [0.0, 0.01, 0.1],
   "bottleneck_capacity": [1000],
   "attacker_busywait": [0],
   "attacker_cpu_limit": [100, 10],
