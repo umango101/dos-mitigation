@@ -2,6 +2,7 @@ sudo apt update
 yes | sudo apt install autoconf git libtool make pkg-config libpsl-dev
 
 cd
+rf -rf openssl
 git clone --depth 1 -b openssl-3.1.4+quic https://github.com/quictls/openssl
 cd openssl
 mkdir build
@@ -10,6 +11,7 @@ make
 sudo make install
 
 cd ..
+rf -rf nghttp3
 git clone -b v1.0.0 https://github.com/ngtcp2/nghttp3
 cd nghttp3
 autoreconf -fi
@@ -19,15 +21,17 @@ make
 sudo make install
 
 cd ..
+rm -rf ngtcp2
 git clone -b v1.0.1 https://github.com/ngtcp2/ngtcp2
 cd ngtcp2
-autoreconf -fi
+autoreconf -fiß
 mkdir build
-./configure PKG_CONFIG_PATH=$HOME/openssl/build/lib64/pkgconfig:$HOME/nghttp3/build/lib/pkgconfig LDFLAGS="-Wl,-rpath,$HOME/openssl/build/lib64" --prefix=$HOME/ngtcp2/build --enable-lib-only
+./configure PKG_CONFIG_PATH=$HOME/openssl/build/lib64/pkgconfig:$HOME/ßnghttp3/build/lib/pkgconfig LDFLAGS="-Wl,-rpath,$HOME/openssl/build/lib64" --prefix=$HOME/ngtcp2/build --enable-lib-only
 make
 sudo make install
 
 cd ..
+rm -rf curl
 git clone https://github.com/curl/curl
 cd curl
 autoreconf -fi
@@ -37,5 +41,5 @@ sudo make install
 
 sudo ldconfig
 
-cd
-curl --http3-only https://cloudflare-quic.com -o quic-test.html
+# cd
+# curl --http3-only https://cloudflare-quic.com -o quic-test.html

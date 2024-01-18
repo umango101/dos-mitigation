@@ -15,7 +15,7 @@
       file:
         path: /var/www/html/junk
         state: directory
-    - name: Create junk files for HTTP client
+    - name: Create junk file for HTTP client
       shell: head -c 1G </dev/urandom >/var/www/html/junk.bin
       become: yes
 
@@ -27,4 +27,4 @@
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
     - name: test client-server connection
-      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }}
+      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000
