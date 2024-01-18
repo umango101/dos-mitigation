@@ -39,18 +39,18 @@ Anytime you create a new materialization, follow these steps to configure it:
 9. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
 10. Run `./play push_common` to push common files to testbed devices.  If you ever add or modify files in the `common` directory, you'll need to run this playbook again to propagate them to your nodes (for example, if you want to add a new attack type).
 11. Run `./play depends` to install dependencies on testbed devices.  This will take a considerable amount of time to run -- it needs to build OpenSSL from source in order to support HTTP3/QUIC.
-12. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
 
 ## Running Experiments
 
 Follow these steps when you want to run a set of experiments:
 1. SSH to your XDC
 2. `cd /usr/local/dos-mitigation`
-3. (Optional) Run `./play ping` to ensure that all devices in your network are up and able to reach the server.  You can also run `./play debug` to view detailed information about each device.
-3. `cp parameters_template.json parameters.json`
-3. Update `parameters.json` with the set of variables you want to test in a session of experiments.  See the following section for an explanation of this file's formatting.
-4. Run `mrg login [your Merge username]` to make sure you're logged in.
-5. Run `python3 ./run.py session_name` to run a set of experiments.  Results will be stored in `/usr/local/dos-mitigation/logs/session_name`.  Except when debugging, it's recommended to run this command via `screen` so that you can close the SSH session without disrupting long-running experiments, and return later to check on the results.  So, run `screen python3 ./run.py session_name` to start experiments, then press `Ctrl-A-D` to detach the screen and run `screen -r` to reattach it.<br>For each set of experiment parameters, as described above, `run.py` will create a new temporary `.settings` file, concatenating `settings` and the `hosts` inventory file (note that some additional settings are added via `inventory_update.sh` -- in a future version these will hopefully be moved to the model file and captured automatically at inventory generation).  Results for each experiment will be stored in a subdirectory of `/usr/local/dos-mitigation/logs/session_name`, named with a timestamp indicating when that experiment began.
+3. `cp parameters_template.json parameters.json` (this step only needs to be done once, for future experiments, just continue editing `parameters.json` as in the following step.)
+4. Update `parameters.json` with the set of variables you want to test in a session of experiments.  See the following section for an explanation of this file's formatting.
+5. Run `mrg login [your Merge username]` to make sure you're logged in.
+6. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, run: `sudo ./moafix.sh`
+7. (Optional) Run `./play ping` to ensure that all devices in your network are up and able to reach the server.  You can also run `./play debug` to view more detailed information about each device.
+8. Run `python3 ./run.py session_name` to run a set of experiments, where `session_name` is some descriptive string.  Results will be stored in `/usr/local/dos-mitigation/logs/session_name`.  Except when debugging, it's recommended to run this command via `screen` so that you can close the SSH session without disrupting long-running experiments, and return later to check on the results.  So, run `screen python3 ./run.py session_name` to start experiments, then press `Ctrl-A-D` to detach the screen and run `screen -r` to reattach it.<br>For each set of experiment parameters, as described above, `run.py` will create a new temporary `.settings` file, concatenating `settings` and the `hosts` inventory file (note that some additional settings are added via `inventory_update.sh` -- in a future version these will hopefully be moved to the model file and captured automatically at inventory generation).  Results for each experiment will be stored in a subdirectory of `/usr/local/dos-mitigation/logs/session_name`, named with a timestamp indicating when that experiment began.
 
 ## Parameter Format
 
