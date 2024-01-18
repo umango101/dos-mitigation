@@ -81,7 +81,15 @@ The `attack_mitigation_pair` key corresponds to a list of lists, in the form:
 ]
 ```
 
-Each attack/mitigation pair listed will be treated as a single parameter value to test in combination with the rest, as described above.  The `attack_mitigation_pair` parameter also supports an optional third value, to specify an alternate attack to be launched when the mitigation is deployed.  If only two values are provided, the initial attack value will be used for both mitigated and unmitigated attacks.
+Each attack/mitigation pair listed will be treated as a single parameter value to test in combination with the rest, as described above.  The `attack_mitigation_pair` parameter also supports an optional third value, to specify an alternate attack to be launched when the mitigation is deployed.  If only two values are provided, the initial attack value will be used for both mitigated and unmitigated attacks.  2- and 3-value tuples can be freely interspersed, like so:
+
+```
+'attack_mitigation_pair': [
+    [attack_A, mitigation_X, attack_B],
+    [attack_B, mitigation_Y],
+    [attack_C, mitigation_Z, attack_A],
+]
+```
 
 ## Common Files
 
