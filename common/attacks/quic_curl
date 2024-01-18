@@ -5,6 +5,6 @@ busywait=$3
 
 while :
 do
-    curl --http3-only --max-time 0.01 https://$server_ip:$server_port/junk.bin -k -o /dev/null -r 1-100000
+    curl -s --http3-only --max-time 0.01 https://$server_ip:$server_port/junk.bin -k -o /dev/null -r 1-100000
     sleep $busywait
 done
