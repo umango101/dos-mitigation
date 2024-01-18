@@ -2,7 +2,7 @@ sudo apt update
 yes | sudo apt install autoconf git libtool make pkg-config libpsl-dev
 
 cd
-rf -rf openssl
+rm -rf openssl
 git clone --depth 1 -b openssl-3.1.4+quic https://github.com/quictls/openssl
 cd openssl
 mkdir build
@@ -10,8 +10,8 @@ mkdir build
 make
 sudo make install
 
-cd ..
-rf -rf nghttp3
+cd
+rm -rf nghttp3
 git clone -b v1.0.0 https://github.com/ngtcp2/nghttp3
 cd nghttp3
 autoreconf -fi
@@ -20,7 +20,7 @@ mkdir build
 make
 sudo make install
 
-cd ..
+cd
 rm -rf ngtcp2
 git clone -b v1.0.1 https://github.com/ngtcp2/ngtcp2
 cd ngtcp2
@@ -30,7 +30,7 @@ mkdir build
 make
 sudo make install
 
-cd ..
+cd
 rm -rf curl
 git clone https://github.com/curl/curl
 cd curl
