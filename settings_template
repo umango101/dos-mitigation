@@ -10,7 +10,6 @@ control_gw_b=172.29.0.1
 
 server_name=s0
 sink_name=sink0
-server_port=80
 
 client_duration=30
 pre_attack_delay=0

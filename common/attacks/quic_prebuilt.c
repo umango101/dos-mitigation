@@ -316,11 +316,11 @@ int main(int argc, char *argv[]) {
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
-		if (argc > 2) {
-			dst_port = (uint16_t)atoi(argv[2]);
-		} else {
-			dst_port = default_dst_port;
-		}
+		// if (argc > 2) {
+		// 	dst_port = (uint16_t)atoi(argv[2]);
+		// } else {
+		// 	dst_port = default_dst_port;
+		// }
 	} else {
 		printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
 		exit(1);

@@ -1,7 +1,8 @@
 #!/bin/bash
 server_ip=$1
-server_port=$2
-busywait=$3
+server_port=443
+busywait=$2
+
 
 while :
 do

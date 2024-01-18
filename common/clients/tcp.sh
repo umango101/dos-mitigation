@@ -14,7 +14,7 @@ file_name="tcp.csv"
 echo "status, start, end" >$log_dir/$file_name
 while true; do
     start="$(date +%s%N)"
-    nc -w 1 -z $server_ip $server_port
+    nc -w 1 -z $server_ip 80
     ok=$?
     end="$(date +%s%N)"
     echo "$ok,$start,$end" >>$log_dir/$file_name

@@ -87,7 +87,7 @@ Each attack/mitigation pair listed will be treated as a single parameter value t
 'attack_mitigation_pair': [
     [attack_A, mitigation_X, attack_B],
     [attack_B, mitigation_Y],
-    [attack_C, mitigation_Z, attack_A],
+    [attack_C, mitigation_Z, attack_A]
 ]
 ```
 

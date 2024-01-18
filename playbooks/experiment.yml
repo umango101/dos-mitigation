@@ -79,7 +79,7 @@
     shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
     register: server_ip
   - name: launch {{ attack_type }} attack at {{ server_name }}
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ server_ip.stdout }} {{ server_port }} {{ attacker_busywait }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -218,7 +218,7 @@
     shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
     register: server_ip
   - name: launching {{ mitigated_attack_type }} attack at {{ server_name }}
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ server_ip.stdout }} {{ server_port }} {{ attacker_busywait }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }}
     async: "{{ attack_duration }}"
     poll: 0
     register: attacker_async
