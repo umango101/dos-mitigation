@@ -34,7 +34,8 @@ if os.path.exists(log_dir):
   else:
     print('Exiting')
     sys.exit()
-
+else:
+  os.makedirs(log_dir)
 
 param_file = "{}/.parameters.json".format(log_dir)
 shutil.copyfile("{}/parameters.json".format(code_dir), param_file)
