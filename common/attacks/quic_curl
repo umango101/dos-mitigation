@@ -1,0 +1,10 @@
+#!/bin/bash
+server_ip=$1
+server_port=$2
+busywait=$3
+
+while :
+do
+    curl --http3-only --max-time 0.001 https://$server_ip:$server_port/junk.bin -k -o /dev/null -r 1-100000
+    sleep $busywait
+done

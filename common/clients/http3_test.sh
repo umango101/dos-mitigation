@@ -6,8 +6,7 @@ server_ip=$1
 server_port=443
 file_size=$2
 
-remote_path="junk/$file_size"
-url="https://$server_ip:$server_port/$remote_path"
+url="https://$server_ip:$server_port/junk.bin"
 
-curl -k --http3-only --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk
+curl -k --http3-only --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk -r 1-$file_size
 

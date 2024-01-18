@@ -16,11 +16,11 @@
         path: /var/www/html/junk
         state: directory
     - name: Create junk files for HTTP client
-      shell: head -c 1K </dev/urandom >/var/www/html/junk/1K
+      shell: head -c 1G </dev/urandom >/var/www/html/junk.bin
       become: yes
 
 - name: install curl client
-  hosts: client
+  hosts: client, attacker
   gather_facts: true
   tasks:
     - name: run client setup script
