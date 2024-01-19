@@ -57,7 +57,7 @@ for p in permutations:
     p['mitigated_attack_type'] = p['attack_mitigation_pair'][2]
   else:
     p['mitigated_attack_type'] = attack_type
-  p['attack_mitigation_pair'] = ','.join(p['attack_mitigation_pair'])
+  p['attack_mitigation_pair'] = '"' + ','.join(p['attack_mitigation_pair']) + '"'
 
 n_permutations = len(permutations)
 print("Testing {} different permutations of experiment parameters".format(n_permutations))
