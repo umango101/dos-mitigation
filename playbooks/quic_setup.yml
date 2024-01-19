@@ -26,5 +26,12 @@
     - name: run client setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
+    - name: retrieve server certificate
+      synchronize:
+        src: /usr/local/nginx/certs/server.crt
+        dest: /usr/local/dos_mitigation/server.crt
+      delegate_to: "{{ server_name }}"
+    - name: register server certificate
+      shell: curl --cacert /usr/local/dos-mitigation/server.crt --location --silent https://{{ server_name }}
     - name: test client-server connection
       shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000
