@@ -1,0 +1,14 @@
+- name: copy server certificate to clients
+  hosts: client, attacker
+  gather_facts: true
+  tasks:
+    - name: copy certificate
+      synchronize:
+        src: /usr/local/nginx/certs/server.crt
+        dest: /usr/local/dos_mitigation/server.crt
+      become: yes
+      delegate_to: s0
+    - name: register server certificate
+      shell: curl --cacert /usr/local/dos-mitigation/server.crt --location --silent https://{{ server_name }}
+    - name: test client-server connection
+      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000
