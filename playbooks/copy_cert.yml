@@ -1,13 +1,24 @@
+- name: fetch server certificate
+  hosts: s0
+  gather_facts: true
+  tasks:
+    - name: fetch certificate
+      fetch:
+        src: /usr/local/nginx/certs/server.crt
+        dest: "{{ user_dir }}/"
+        flat: yes
+      ignore_errors: yes
+
 - name: copy server certificate to clients
   hosts: client, attacker
   gather_facts: true
   tasks:
     - name: copy certificate
-      synchronize:
-        src: /usr/local/nginx/certs/server.crt
-        dest: /usr/local/dos_mitigation/server.crt
+      copy:
+        src: "{{ user_dir }}/server.crt"
+        dest: "{{ user_dir }}/"
+        mode: preserve
       become: yes
-      delegate_to: s0
     - name: register server certificate
       shell: curl --cacert /usr/local/dos-mitigation/server.crt --location --silent https://{{ server_name }}
     - name: test client-server connection
