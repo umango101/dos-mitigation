@@ -19,7 +19,3 @@
         dest: "{{ user_dir }}/"
         mode: preserve
       become: yes
-    - name: register server certificate
-      shell: curl --cacert /usr/local/dos-mitigation/server.crt --location --silent https://{{ server_name }}
-    - name: test client-server connection
-      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000

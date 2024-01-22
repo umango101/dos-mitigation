@@ -5,6 +5,9 @@
     - name: run server setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_server_setup.sh
       become: no
+    - name: create SSL certificate
+      shell: /usr/local/dos-mitigation/common/setup/cert_gen.sh
+      become: no
     - name: Delete old HTTP junk directory
       become: yes
       file:
@@ -17,12 +20,6 @@
         state: directory
     - name: Create junk file for HTTP client
       shell: head -c 1G </dev/urandom >/var/www/html/junk.bin
-      become: yes
-    - name: retrieve server certificate
-      synchronize:
-        src: /usr/local/nginx/certs/server.crt
-        dest: /usr/local/dos_mitigation/server.crt
-        mode: pull
       become: yes
 
 - name: install curl client
@@ -38,7 +35,5 @@
         dest: /usr/local/nginx/certs/server.crt
         mode: push
       become: yes
-    - name: register server certificate
-      shell: curl --cacert /usr/local/dos-mitigation/server.crt --location --silent https://{{ server_name }}
     - name: test client-server connection
       shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000
