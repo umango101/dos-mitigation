@@ -29,11 +29,5 @@
     - name: run client setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
-    - name: push server certificate
-      synchronize:
-        src: /usr/local/dos_mitigation/server.crt
-        dest: /usr/local/nginx/certs/server.crt
-        mode: push
-      become: yes
     - name: test client-server connection
       shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000

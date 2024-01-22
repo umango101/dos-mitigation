@@ -4,7 +4,7 @@
   tasks:
     - name: fetch certificate
       fetch:
-        src: /usr/local/nginx/certs/server.crt
+        src: /usr/local/nginx/certs/server.pem
         dest: "{{ user_dir }}/"
         flat: yes
       ignore_errors: yes
@@ -15,7 +15,7 @@
   tasks:
     - name: copy certificate
       copy:
-        src: "{{ user_dir }}/server.crt"
+        src: "{{ user_dir }}/server.pem"
         dest: "{{ user_dir }}/"
         mode: preserve
       become: yes
