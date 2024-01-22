@@ -3,7 +3,7 @@
 # Simple HTTP-3/QUIC Client
 
 server_name=$1
-server_ip=$(/usr/local/dos-mitigation/common/bin/hostname_to_ip $($server_name))
+server_ip=$(/usr/local/dos-mitigation/common/bin/hostname_to_ip $server_name)
 server_port=443
 file_size=$2
 
