@@ -2,7 +2,8 @@
 
 # Simple HTTP Client
 
-server_ip=$1
+server_name=$1
+server_ip=$(/usr/local/dos-mitigation/common/bin/hostname_to_ip $($server_name))
 server_port=443
 request_interval=$2
 file_size=$3
