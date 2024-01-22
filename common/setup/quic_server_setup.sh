@@ -27,8 +27,8 @@ sudo snap install --classic certbot
 openssl genrsa -aes256 -passout pass:gsahdg -out server.pass.key 4096
 openssl rsa -passin pass:gsahdg -in server.pass.key -out server.key
 rm server.pass.key
-common_name=$(/usr/local/dos-mitigation/common/bin/hostname_to_ip $(hostname -s))
-openssl req -new -key server.key -out server.csr -subj /CN=${common_name}/
+# common_name=$(/usr/local/dos-mitigation/common/bin/hostname_to_ip $(hostname -s))
+openssl req -new -key server.key -out server.csr -subj /CN=${hostname -s}/
 openssl x509 -req -sha256 -days 365 -in server.csr -signkey server.key -out server.crt
 sudo mkdir -p /usr/local/nginx/certs
 sudo mv server.key /usr/local/nginx/certs/server.key
