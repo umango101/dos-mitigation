@@ -16,7 +16,7 @@ url="https://$server_ip:$server_port/junk.bin"
 echo "status, start, end" >$log_file
 while true; do
     start="$(date +%s%N)"
-    curl -s -k --http3-only --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk -r 1-$file_size
+    curl -s --http3-only --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk -r 1-$file_size --cacert /usr/local/dos-mitigation/server.crt
     ok=$?
     end="$(date +%s%N)"
     echo "$ok,$start,$end" >>$log_file
