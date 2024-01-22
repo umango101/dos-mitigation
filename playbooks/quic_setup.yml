@@ -18,6 +18,12 @@
     - name: Create junk file for HTTP client
       shell: head -c 1G </dev/urandom >/var/www/html/junk.bin
       become: yes
+    - name: retrieve server certificate
+      synchronize:
+        src: /usr/local/nginx/certs/server.crt
+        dest: /usr/local/dos_mitigation/server.crt
+        mode: pull
+      become: yes
 
 - name: install curl client
   hosts: client, attacker
@@ -26,11 +32,12 @@
     - name: run client setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
-    - name: retrieve server certificate
+    - name: push server certificate
       synchronize:
-        src: /usr/local/nginx/certs/server.crt
-        dest: /usr/local/dos_mitigation/server.crt
-      delegate_to: "{{ server_name }}"
+        src: /usr/local/dos_mitigation/server.crt
+        dest: /usr/local/nginx/certs/server.crt
+        mode: push
+      become: yes
     - name: register server certificate
       shell: curl --cacert /usr/local/dos-mitigation/server.crt --location --silent https://{{ server_name }}
     - name: test client-server connection
