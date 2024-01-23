@@ -29,7 +29,7 @@ Anytime you create a new XDC, follow these steps to configure it:
 
 Anytime you create a new materialization, follow these steps to configure it:
 1. SSH to your XDC
-2. `cd /usr/local/dos/mitigation`
+2. `cd /usr/local/dos-mitigation`
 3. `cp settings_template settings`
 4. Update `settings` with your own credentials and testbed settings.  At minimum you'll need to set the following: `MRG_USER, MRG_PROJECT, MRG_EXPERIMENT, MRG_MATERIALIZATION`.  If you have *any* bare metal (non-virtual) nodes in your materialization you must also set `bare_metal=true` to ensure routes are properly configured.
 5. `source settings`
