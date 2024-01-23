@@ -12,7 +12,7 @@ log_dir=/tmp/logs/
 mkdir -p $log_dir
 log_file="$log_dir/http.csv"
 
-url="http://$server_ip:$server_port/junk.bin"
+url="http://$server_ip:$server_port/junk/foo.bin"
 
 echo "status, start, end" >$log_file
 while true; do

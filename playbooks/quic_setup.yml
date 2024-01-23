@@ -19,7 +19,7 @@
         path: /var/www/html/junk
         state: directory
     - name: Create junk file for HTTP client
-      shell: head -c 1G </dev/urandom >/var/www/html/junk.bin
+      shell: head -c 1G </dev/urandom >/var/www/html/junk/foo.bin
       become: yes
 
 - import_playbook: "copy_certs.yml"
