@@ -1,0 +1,21 @@
+- name: fetch server certificate
+  hosts: s0
+  gather_facts: true
+  tasks:
+    - name: fetch certificate
+      fetch:
+        src: /usr/local/nginx/certs/server.pem
+        dest: "{{ user_dir }}/"
+        flat: yes
+      ignore_errors: yes
+
+- name: copy server certificate to clients
+  hosts: client, attacker
+  gather_facts: true
+  tasks:
+    - name: copy certificate
+      copy:
+        src: "{{ user_dir }}/server.pem"
+        dest: "{{ user_dir }}/"
+        mode: preserve
+      become: yes

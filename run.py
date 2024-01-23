@@ -16,7 +16,27 @@ print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
 
 log_dir = "{}/logs/{}".format(code_dir, session)
-os.makedirs(log_dir)
+
+if os.path.exists(log_dir):
+  action = input("Session with name '" + str(session) + "' already exists\n" + 
+                  "(E)xit / (o)verwrite / (i)ncrement\n"
+  )
+  action = action.strip().lower()
+  if action in ['o', 'overwrite']:
+    shutil.rmtree(log_dir, ignore_errors=True)
+    os.makedirs(log_dir)
+  elif action in ['i', 'increment']:
+    i=0
+    while os.path.exists(log_dir + "_" + str(i)):
+      i += 1
+    log_dir = log_dir + "_" + str(i)
+    os.makedirs(log_dir)
+  else:
+    print('Exiting')
+    sys.exit()
+else:
+  os.makedirs(log_dir)
+
 param_file = "{}/.parameters.json".format(log_dir)
 shutil.copyfile("{}/parameters.json".format(code_dir), param_file)
 with open(param_file) as f:
@@ -28,23 +48,21 @@ with open('{}/mitigated_attack_types.json'.format(code_dir)) as f:
 keys, values = zip(*params.items())
 permutations = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
-expanded_permutations = []
 for p in permutations:
-  mitigation = p['mitigation']
-  attack_type = p['attack_type']
-  mitigated_attack_set = [attack_type]
-  if mitigation in mitigated_attack_types:
-    if attack_type in mitigated_attack_types[mitigation]:
-      mitigated_attack_set = mitigated_attack_types[mitigation][attack_type]
-  for mitigated_attack_type in mitigated_attack_set:
-    new_p = p.copy()
-    new_p["mitigated_attack_type"] = mitigated_attack_type
-    expanded_permutations.append(new_p)
+  attack_type = p['attack_mitigation_pair'][0]
+  mitigation = p['attack_mitigation_pair'][1]
+  p['attack_type'] = attack_type
+  p['mitigation'] = mitigation
+  if len(p['attack_mitigation_pair']) > 2:
+    p['mitigated_attack_type'] = p['attack_mitigation_pair'][2]
+  else:
+    p['mitigated_attack_type'] = attack_type
+  p['attack_mitigation_pair'] = '"' + ','.join(p['attack_mitigation_pair']) + '"'
 
-n_permutations = len(expanded_permutations)
+n_permutations = len(permutations)
 print("Testing {} different permutations of experiment parameters".format(n_permutations))
 i=0
-for p in expanded_permutations:
+for p in permutations:
   i += 1
   timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
   print("Starting experiment {}/{} at time {} with the following parameters:".format(i, n_permutations, timestamp))
@@ -55,7 +73,6 @@ for p in expanded_permutations:
     for k, v in p.items():
       f.write("{}={}\n".format(k, v))
     f.write("session={}\n".format(session))
-    f.write("mitigated_attack_type={}".format(p["mitigated_attack_type"]))
 
   try:
     os.remove(tmp_log_path)

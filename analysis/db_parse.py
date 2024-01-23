@@ -225,24 +225,15 @@ def analyze_experiment(conn: dbh.Connection, experiment):
             MA = d["ma"]
 
             baseline = UB
-
+            threat = baseline - UA
+            damage = baseline - MA
+            overhead = baseline - MB
             if minimize:
-                threat = UA - UB
-                damage = MA - UB
-                overhead = MB - UB
-            else:
-                threat = UB - UA
-                damage = UB - MA
-                overhead = UB - MB
-
+                threat *= -1.0
+                damage *= -1.0
+                overhead *= -1.0
             
-
-            if threat <= 0:
-                efficacy = 0
-                efficacy_pct_threat = 0
-            else:
-                efficacy = threat - damage
-                efficacy_pct_threat = (efficacy / threat) * 100.0
+            efficacy = threat - damage
 
             if baseline == 0:
                 damage_pct = 0
@@ -254,6 +245,19 @@ def analyze_experiment(conn: dbh.Connection, experiment):
                 threat_pct = (threat / baseline) * 100.0
                 overhead_pct = (overhead / baseline) * 100.0
                 efficacy_pct = (efficacy / baseline) * 100.0
+
+            if (threat <= 0):
+                efficacy_pct_threat = 0
+            else:
+                efficacy_pct_threat = (efficacy / threat) * 100.0
+
+            if efficacy_pct > 0:
+                if (threat_pct <= 0):
+                    efficacy_relative = 0
+                else:
+                    efficacy_relative = efficacy_pct * (threat_pct / 100.0)
+            else:
+                 efficacy_relative = efficacy_pct
 
             result_row = {
                 "experiment": experiment_id,
@@ -271,6 +275,7 @@ def analyze_experiment(conn: dbh.Connection, experiment):
                 "damage_pct": damage_pct,
                 "efficacy_pct": efficacy_pct,
                 "efficacy_pct_threat": efficacy_pct_threat,
+                "efficacy_relative": efficacy_relative,
                 "overhead_pct": overhead_pct
             }
             conn.insert_dict_as_row("results", result_row)

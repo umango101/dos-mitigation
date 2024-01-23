@@ -19,7 +19,7 @@
 
   - name: install general dependencies
     apt:
-      name: net-tools, traceroute, tcpstat, ncat, cpulimit, bc
+      name: net-tools, traceroute, tcpstat, ncat, cpulimit, bc, rsync
       update_cache: yes
     become: yes
 

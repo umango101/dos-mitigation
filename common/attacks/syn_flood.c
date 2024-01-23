@@ -171,14 +171,14 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	if (argc > 2) {
-		dst_port = (uint16_t)atoi(argv[2]);
-	} else {
-		dst_port = default_dst_port;
-	}
+	// if (argc > 2) {
+	// 	dst_port = (uint16_t)atoi(argv[2]);
+	// } else {
+	// 	dst_port = default_dst_port;
+	// }
 
-	if (argc > 3) {
-		busy_wait = (uint32_t)atoi(argv[3]);
+	if (argc > 2) {
+		busy_wait = (uint32_t)atoi(argv[2]);
 	} else {
 		busy_wait = 0;
 	}

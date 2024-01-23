@@ -10,52 +10,86 @@ This repository contains versions of the tools I developed for Denial-of-Service
 
 This code is intended for research purposes only.  Please use it responsibly.
 
-## Merge Setup
+## Setup
 
 These instructions assume you have already materialized an [experiment in Merge](https://mergetb.org/docs/experimentation/hello-world/), connected it to an [XDC](https://mergetb.org/docs/experimentation/xdc/), and installed the [Merge CLI](https://gitlab.com/mergetb/portal/cli) on that XDC.
-The following steps should need to be done infrequently, when first setting up a new experiment and XDC.  Step 8 will need to be repeated anytime you make changes to this repository that you want to be reflected on testbed devices.
 
+### Configuring New XDCs
+
+Anytime you create a new XDC, follow these steps to configure it:
 1. SSH to your XDC
 2. `cd /usr/local`
 3. Run `sudo -E git clone git@github.com:sdelaughter/dos-mitigation.git` to clone this repository.  You'll need sudo to write in `/usr/local`, and the `-E` flag will preserve your environment variables with sudo (including SSH keys).
 4. `sudo chown -R $USER dos-mitigation`
 5. `sudo chgrp -R $USER dos-mitigation`
 6. `cd dos-mitigation`
-7. `sudo ./xdc_setup.sh`
-8. `cp settings_template settings`
-9. Update `settings` with your own credentials and testbed settings.  At minimum you'll need to set the following: `MRG_USER, MRG_PROJECT, MRG_EXPERIMENT, MRG_MATERIALIZATION`
-10. `source settings`
-11. Run `mrg login $MRG_USER` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
-12. Run `./inventory_gen.sh` to build inventory files listing the devices in your network.
-13. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
-14. Run `./play push_common` to push common files to testbed devices.  If you ever add or modify files in the `common` directory, you'll need to run this playbook again to propagate them to your nodes (for example, if you want to add a new attack type).
-15. Run `./play depends` to install dependencies on testbed devices.
-16. If you want to experiment with HTTP/3 over QUIC, run `./play quic_setup`.  This is separated from the main dependencies because it take a considerable amount of time to run (it needs to build a custom version of OpenSSL from source).  Note that this will currently break the regular HTTP clients becuase it replaces the Apache server with an NGINX server.  This will likely be updated soon to make NGINX the default, with support for both HTTP/2 and HTTP/3.
-17. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, add the following line to `/etc/hosts`: `172.30.0.1 moactl`.
+7. Run `sudo ./xdc_setup.sh` to install dependencies.  You will likely be prompted to enter your timezone.
+
+### Configuring New Materializations
+
+Anytime you create a new materialization, follow these steps to configure it:
+1. SSH to your XDC
+2. `cd /usr/local/dos/mitigation`
+3. `cp settings_template settings`
+4. Update `settings` with your own credentials and testbed settings.  At minimum you'll need to set the following: `MRG_USER, MRG_PROJECT, MRG_EXPERIMENT, MRG_MATERIALIZATION`.  If you have *any* bare metal (non-virtual) nodes in your materialization you must also set `bare_metal=true` to ensure routes are properly configured.
+5. `source settings`
+6. `mrg config set server $MRG_SERVER`
+7. Run `mrg login $MRG_USER` to login to the Merge testbed.  Note that you will typically need to repeat this step each time you connect to the XDC, and at least once per day for long-running connections.
+8. Run `./inventory_gen.sh` to build inventory files listing the devices in your network.
+9. Run `./inventory_update.sh` to copy those inventory files and add extra variables.
+10. Run `./play push_common` to push common files to testbed devices.  If you ever add or modify files in the `common` directory, you'll need to run this playbook again to propagate them to your nodes (for example, if you want to add a new attack type).
+11. Run `./play depends` to install dependencies on testbed devices.  This will take a considerable amount of time to run -- it needs to build OpenSSL from source in order to support HTTP3/QUIC.
 
 ## Running Experiments
 
-1. `ssh` to your XDC and run `cd /usr/local/dos-mitigation` to enter the directory
-2. Optionally, run `./play ping` to ensure that all devices in your network are up and able to reach the server.  You can also use `play debug` to view detailed information about each device.
-3. `cp parameters_template.json parameters.json`
-3. Update `parameters.json` with the set of variables you want to test in a session of experiments.  The format is a dictionary in which keys are parameter names and values are a list of list of corresponding parameter values.  All possible combinations will be tested by `run.py`, such that this dictionary...
-    ```
-    {
-        "foo": [0, 1],
-        "bar": ["a", "b"]
-    }
-    ```
+Follow these steps when you want to run a set of experiments:
+1. SSH to your XDC
+2. `cd /usr/local/dos-mitigation`
+3. `cp parameters_template.json parameters.json` (this step only needs to be done once, for future experiments, just continue editing `parameters.json` as in the following step.)
+4. Update `parameters.json` with the set of variables you want to test in a session of experiments.  See the following section for an explanation of this file's formatting.
+5. Run `mrg login [your Merge username]` to make sure you're logged in.
+6. Try running `moacmd show`.  There's a good chance you will get the following error: `rpc to moactld failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing dial tcp: lookup moactl on 172.30.0.1:53: no such host"`.  If so, run: `sudo ./moafix.sh`
+7. (Optional) Run `./play ping` to ensure that all devices in your network are up and able to reach the server.  You can also run `./play debug` to view more detailed information about each device.
+8. Run `python3 ./run.py session_name` to run a set of experiments, where `session_name` is some descriptive string.  Results will be stored in `/usr/local/dos-mitigation/logs/session_name`.  Except when debugging, it's recommended to run this command via `screen` so that you can close the SSH session without disrupting long-running experiments, and return later to check on the results.  So, run `screen python3 ./run.py session_name` to start experiments, then press `Ctrl-A-D` to detach the screen and run `screen -r` to reattach it.<br>For each set of experiment parameters, as described above, `run.py` will create a new temporary `.settings` file, concatenating `settings` and the `hosts` inventory file (note that some additional settings are added via `inventory_update.sh` -- in a future version these will hopefully be moved to the model file and captured automatically at inventory generation).  Results for each experiment will be stored in a subdirectory of `/usr/local/dos-mitigation/logs/session_name`, named with a timestamp indicating when that experiment began.
 
-    ...will result in four sets of experiments with the following settings:
+## Parameter Format
 
-    ```
-    foo=0, bar="a"
-    foo=0, bar="b"
-    foo=1, bar="a"
-    foo=1, bar="b"
-    ```
-4. Run `mrg login [your Merge username]` to make sure you're logged in.
-5. Run `python3 ./run.py session_name` to run a set of experiments.  Results will be stored in `/usr/local/dos-mitigation/logs/session_name`.  Except when debugging, it's recommended to run this command via `screen` so that you can close the SSH session without disrupting long-running experiments, and return later to check on the results.  So, run `screen python3 ./run.py session_name` to start experiments, then press `Ctrl-A-D` to detach the screen and run `screen -r` to reattach it.<br>For each set of experiment parameters, as described above, `run.py` will create a new temporary `.settings` file, concatenating `settings` and the `hosts` inventory file (note that some additional settings are added via `inventory_update.sh` -- in a future version these will hopefully be moved to the model file and captured automatically at inventory generation).  Results for each experiment will be stored in a subdirectory of `/usr/local/dos-mitigation/logs/session_name`, named with a timestamp indicating when that experiment began.
+The general format of  `parameters.json` is a dictionary in which keys are parameter names and values are a list of list of corresponding parameter values.  All possible combinations will be tested by `run.py`, such that this dictionary...
+
+```
+{
+    "foo": [0, 1],
+    "bar": ["a", "b"]
+}
+```
+
+...will result in four sets of experiments with the following settings:
+
+```
+foo=0, bar="a"
+foo=0, bar="b"
+foo=1, bar="a"
+foo=1, bar="b"
+```
+
+The `attack_mitigation_pair` key corresponds to a list of lists, in the form:
+
+```
+'attack_mitigation_pair': [
+    [attack_A, mitigation_X],
+    [attack_B, mitigation_Y]
+]
+```
+
+Each attack/mitigation pair listed will be treated as a single parameter value to test in combination with the rest, as described above.  The `attack_mitigation_pair` parameter also supports an optional third value, to specify an alternate attack to be launched when the mitigation is deployed.  If only two values are provided, the initial attack value will be used for both mitigated and unmitigated attacks.  2- and 3-value tuples can be freely interspersed, like so:
+
+```
+'attack_mitigation_pair': [
+    [attack_A, mitigation_X, attack_B],
+    [attack_B, mitigation_Y],
+    [attack_C, mitigation_Z, attack_A]
+]
+```
 
 ## Common Files
 

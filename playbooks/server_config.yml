@@ -7,25 +7,3 @@
       state: started
       daemon_reload: yes
     become: yes
-
-  - name: Delete old HTTP junk directory
-    become: yes
-    file:
-      path: /var/www/html/junk
-      state: absent
-  - name: Recreate HTTP junk directory
-    become: yes
-    file:
-      path: /var/www/html/junk
-      state: directory
-  - name: Create junk files for HTTP client
-    shell: head -c {{ item }} </dev/urandom >/var/www/html/junk/{{ item }}
-    become: yes
-    loop:
-        - 1K
-        - 10K
-        - 100K
-        - 1M
-        - 10M
-        - 100M
-        - 1G

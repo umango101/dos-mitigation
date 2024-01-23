@@ -5,6 +5,9 @@
     - name: run server setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_server_setup.sh
       become: no
+    - name: create SSL certificate
+      shell: /usr/local/dos-mitigation/common/setup/cert_gen.sh
+      become: no
     - name: Delete old HTTP junk directory
       become: yes
       file:
@@ -15,24 +18,20 @@
       file:
         path: /var/www/html/junk
         state: directory
-    - name: Create junk files for HTTP client
-      shell: head -c {{ item }} </dev/urandom >/var/www/html/junk/{{ item }}
+    - name: Create junk file for HTTP client
+      shell: head -c 1G </dev/urandom >/var/www/html/junk/foo.bin
       become: yes
-      loop:
-          - 1K
-          - 10K
-          - 100K
-          - 1M
-          - 10M
-          - 100M
-          - 1G
+
+- import_playbook: "copy_cert.yml"
 
 - name: install curl client
-  hosts: client
+  hosts: client, attacker
   gather_facts: true
   tasks:
     - name: run client setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
-    - name: test client-server connection
-      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }}
+    - name: test HTTP/2 connection
+      shell: /usr/local/dos-mitigation/common/clients/https_test.sh {{ server_name }} 1000
+    - name: test HTTP/3 connection
+      shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000
