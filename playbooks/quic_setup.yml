@@ -22,7 +22,7 @@
       shell: head -c 1G </dev/urandom >/var/www/html/junk/foo.bin
       become: yes
 
-- import_playbook: "copy_certs.yml"
+- import_playbook: "copy_cert.yml"
 
 - name: install curl client
   hosts: client, attacker
