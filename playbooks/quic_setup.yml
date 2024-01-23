@@ -31,5 +31,7 @@
     - name: run client setup script
       shell: /usr/local/dos-mitigation/common/setup/quic_client_setup.sh
       become: no
-    - name: test client-server connection
+    - name: test HTTP/2 connection
+      shell: /usr/local/dos-mitigation/common/clients/https_test.sh {{ server_name }} 1000
+    - name: test HTTP/3 connection
       shell: /usr/local/dos-mitigation/common/clients/http3_test.sh {{ server_name }} 1000
