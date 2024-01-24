@@ -30,6 +30,7 @@ if os.path.exists(log_dir):
     while os.path.exists(log_dir + "_" + str(i)):
       i += 1
     log_dir = log_dir + "_" + str(i)
+    session = session + "_" + str(i)
     os.makedirs(log_dir)
   else:
     print('Exiting')
