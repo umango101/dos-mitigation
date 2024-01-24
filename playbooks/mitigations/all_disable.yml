@@ -1,0 +1,18 @@
+- name: Disable QUIC Retry at Server
+  hosts: server
+  tasks:
+    - name: Disable SYN Cookies at Server
+      shell: "{{ user_dir }}/common/mitigations/syn_cookies.sh 0"
+      become: yes
+    - name: Edit nginx config file
+      replace:
+        path: /usr/local/nginx/conf/nginx.conf
+        regexp: 'quic_retry on'
+        replace: 'quic_retry off'
+      become: yes
+    - name: Restart nginx server
+      systemd:
+        name: nginx
+        state: started
+        daemon_reload: yes
+      become: yes
