@@ -141,7 +141,7 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment)
                 if filename.endswith('.zip'):
                     continue
                 path = "{}/{}/{}/{}/{}/{}/logs/{}".format(log_dir, materialization, session, experiment, host, mode, filename)
-                if filename in ["tcp.csv", "http.csv"]:
+                if filename in ["tcp.csv", "http.csv", "https.csv", "http3.csv"]:
                     success_data, failure_data = parse_csv(path)
                     query = "insert into data (metric, host, experiment, attack_enabled, mitigation_enabled, timestamp, value) VALUES %s"
                     for data, metric in [
