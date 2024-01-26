@@ -4,6 +4,9 @@
     - name: set bottleneck capacity to {{ bottleneck_capacity }}Mbps
       shell: moacmd set bottleneck capacity {{ bottleneck_capacity }}Mbps
       when: bottleneck_capacity >= 0
-    - name: set server link latency to {{ bottleneck_latency }}ms
-      shell: moacmd set server_link latency {{ bottleneck_latency }}ms
+    - name: set bottleneck latency to {{ bottleneck_latency }}ms
+      shell: moacmd set bottleneck latency {{ bottleneck_latency }}ms
       when: bottleneck_latency >= 0
+    - name: set bottleneck loss to {{ bottleneck_latency }}ms
+      shell: moacmd set bottleneck latency {{ bottleneck_loss }}
+      when: bottleneck_loss >= 0
