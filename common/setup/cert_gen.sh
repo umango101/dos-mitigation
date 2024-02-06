@@ -15,6 +15,6 @@ sudo mv server.crt /usr/local/nginx/certs/server.crt
 sudo mv server.pem /usr/local/nginx/certs/server.pem
 
 sudo cp -a /usr/local/dos-mitigation/common/setup/nginx.service /lib/systemd/system/nginx.service
-sudo cp -a /usr/local/dos-mitigation/common/setup/nginx.conf /usr/local/nginx/conf/nginx.conf
+sudo cp -a /usr/local/dos-mitigation/common/setup/nginx.conf /etc/nginx/nginx.conf
 
 sudo systemctl restart nginx

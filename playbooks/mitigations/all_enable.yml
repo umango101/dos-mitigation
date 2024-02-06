@@ -6,7 +6,7 @@
       become: yes
     - name: Edit nginx config file
       replace:
-        path: /usr/local/nginx/conf/nginx.conf
+        path: /etc/nginx/nginx.conf
         regexp: 'quic_retry off'
         replace: 'quic_retry on'
       become: yes
