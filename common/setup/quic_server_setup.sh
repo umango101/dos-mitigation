@@ -17,7 +17,7 @@ wget http://hg.nginx.org/nginx/archive/tip.zip
 unzip tip.zip
 rm tip.zip
 cd nginx-*
-./auto/configure --with-debug --with-http_ssl_module --with-http_v2_module  --with-http_v3_module --with-cc-opt="-I../quictls/build/include" --with-ld-opt="-L../quictls/build/lib64"
+./auto/configure --prefix="/usr/local/nginx" --with-debug --with-http_ssl_module --with-http_v2_module  --with-http_v3_module --with-cc-opt="-I../quictls/build/include" --with-ld-opt="-L../quictls/build/lib64"
 make
 sudo make install
 sudo ldconfig ~/quictls/build/lib64
