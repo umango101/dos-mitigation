@@ -352,7 +352,7 @@ int main(int argc, char *argv[]) {
 		    memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
 		  	memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + strlen(data));
 		  	tcph->check = csum( (unsigned short*) pseudogram , psize);
-			#endif
+			// #endif
 		#endif
 
 		// Send the packet
