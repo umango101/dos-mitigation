@@ -7,6 +7,6 @@
     - name: set bottleneck latency to {{ bottleneck_latency }}ms
       shell: moacmd set bottleneck latency {{ bottleneck_latency }}ms
       when: bottleneck_latency >= 0
-    - name: set bottleneck loss to {{ bottleneck_latency }}ms
-      shell: moacmd set bottleneck latency {{ bottleneck_loss }}
+    - name: set bottleneck loss to {{ bottleneck_loss }}ms
+      shell: moacmd set bottleneck loss {{ bottleneck_loss }}
       when: bottleneck_loss >= 0
