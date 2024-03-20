@@ -10,7 +10,7 @@ import sys
 session = sys.argv[1]
 
 code_dir = "/usr/local/dos-mitigation"
-tmp_log_path = "{}/ansible.log".format(code_dir)
+tmp_log_path = "/tmp/ansible.log"
 
 print("Generating Inventory")
 subprocess.run(["./inventory_gen.sh"])
