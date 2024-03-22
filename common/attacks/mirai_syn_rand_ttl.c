@@ -66,6 +66,17 @@ struct pseudo_header {
 	u_int16_t tcp_length;
 };
 
+uint32_t rand_next(void) //period 2^96-1
+{
+    uint32_t t = x;
+    t ^= t << 11;
+    t ^= t >> 8;
+    x = y; y = z; z = w;
+    w ^= w >> 19;
+    w ^= t;
+    return w;
+}
+
 static void update_ip_csum(struct iphdr* iph, __be32 old_saddr) {
   if (old_saddr == iph->saddr){
     return;
