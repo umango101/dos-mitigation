@@ -66,6 +66,16 @@ struct pseudo_header {
 	u_int16_t tcp_length;
 };
 
+static uint32_t x, y, z, w;
+
+void rand_init(void)
+{
+    x = time(NULL);
+    y = getpid() ^ getppid();
+    z = clock();
+    w = z ^ y;
+}
+
 uint32_t rand_next(void) //period 2^96-1
 {
     uint32_t t = x;
@@ -229,6 +239,7 @@ int main(int argc, char *argv[]) {
 
   	// Seed RNG
   	srand(time(NULL));
+	rand_init();
 
 	// Byte array to hold the full packet
 	char datagram[MAX_PACKET_SIZE];
