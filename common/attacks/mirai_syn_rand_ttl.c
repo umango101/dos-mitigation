@@ -27,6 +27,8 @@ License: MIT
 #define RAND_SRC_PORT 0 // Toggle source port randomization
 #define INCREMENT_ID 1 // Toggle incrementing of IP ID field
 #define FAST_CSUM 0 // Toggle fast checksum updating (experimental)
+#define TTL_MIN 32
+#define TTL_MAX 255
 
 #define PROTO_TCP_OPT_NOP   1
 #define PROTO_TCP_OPT_MSS   2
@@ -214,8 +216,8 @@ int main(int argc, char *argv[]) {
 	#endif
 
 
-  // Seed RNG
-  srand(time(NULL));
+  	// Seed RNG
+  	srand(time(NULL));
 
 	// Byte array to hold the full packet
 	char datagram[MAX_PACKET_SIZE];
@@ -327,6 +329,7 @@ int main(int argc, char *argv[]) {
 
 	__be32 old_saddr;
 	__be32 new_saddr;
+	__u8 ttl_val = 64; 
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
 		#if RAND_SRC_ADDR || RAND_SRC_PORT || INCREMENT_ID
@@ -360,10 +363,12 @@ int main(int argc, char *argv[]) {
 			#else
 		    iph->check = 0;
 		    iph->saddr = new_saddr;
+			ttl_val = rand() % (TTL_MAX + 1 - TTL_MIN) + TTL_MIN;
+			iph->ttl = ttl_val;
 		    iph->check = csum ((unsigned short *) datagram, iph->tot_len);
 
 		    tcph->check = 0;
-				tcph->seq = new_saddr;
+			tcph->seq = new_saddr;
 		    psh.source_address = new_saddr;
 		    memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
 		  	memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + strlen(data));
