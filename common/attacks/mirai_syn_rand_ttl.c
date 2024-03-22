@@ -334,11 +334,11 @@ int main(int argc, char *argv[]) {
 	psh.protocol = IPPROTO_TCP;
 	psh.tcp_length = htons(sizeof(struct tcphdr) + strlen(data));
 
-	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + strlen(data);
+	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + 20 + strlen(data);
 	pseudogram = malloc(psize);
 
 	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + strlen(data));
+	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + 20 + strlen(data));
 
 	tcph->check = csum((unsigned short*) pseudogram, psize);
 
@@ -393,7 +393,7 @@ int main(int argc, char *argv[]) {
 			tcph->seq = new_saddr;
 		    psh.source_address = new_saddr;
 		    memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-		  	memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + strlen(data));
+		  	memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + 20 + strlen(data));
 		  	tcph->check = csum( (unsigned short*) pseudogram , psize);
 			#endif
 		#endif
