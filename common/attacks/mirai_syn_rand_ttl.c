@@ -273,7 +273,7 @@ int main(int argc, char *argv[]) {
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + strlen(data);
+	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + 20 + strlen(data);
 	iph->id = htonl(0);	//Id of this packet, can be any value
 	iph->frag_off = 0;
 	iph->ttl = 64;

@@ -40,7 +40,7 @@ License: MIT
 	header) is only 40 bytes, and at most 100.  Other attack packets also tend to
 	be very small in order to maximize per-packet overhead in the network.
 */
-const uint32_t MAX_PACKET_SIZE = 1500;
+const uint32_t MAX_PACKET_SIZE = 9000;
 
 // Default Source IP, in case we aren't randomizing
 const char default_src_addr[32] = "127.0.0.1";
@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + strlen(data);
+	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + 20 + strlen(data); //20 bytes of options
 	iph->id = htonl(0);	//Id of this packet, can be any value
 	iph->frag_off = 0;
 	iph->ttl = 64;
