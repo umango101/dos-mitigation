@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 	// Initialize headers
 	struct iphdr *iph = (struct iphdr *) datagram;
 	struct tcphdr *tcph = (struct tcphdr *) (datagram + sizeof (struct ip));
-	uint8_t *opts (uint8_t *)(tcph + 1);
+	uint8_t *opts = (uint8_t *)(tcph + 1);
 	struct pseudo_header psh;
 
 	// TCP Payload
