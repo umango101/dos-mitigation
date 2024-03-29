@@ -34,6 +34,9 @@ License: MIT
 #define PROTO_TCP_OPT_SACK  4
 #define PROTO_TCP_OPT_TSVAL 8
 
+#define TCP_OPT_LEN 20
+
+
 /*
   Maximum total packet size.  This could be larger, but packets over 1500 bytes
 	may exceed some path MTUs.  Plus a standard SYN packet (including the IP
@@ -258,7 +261,7 @@ int main(int argc, char *argv[]) {
 	struct pseudo_header psh;
 
 	// TCP Payload
-	data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr);
+	data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr) + TCP_OPT_LEN;
 	strcpy(data, "");
 
 	// Address resolution
@@ -271,7 +274,7 @@ int main(int argc, char *argv[]) {
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + 20 + strlen(data); //20 bytes of options
+	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN + strlen(data); //20 bytes of options
 	iph->id = htonl(0);	//Id of this packet, can be any value
 	iph->frag_off = 0;
 	iph->ttl = 64;
@@ -332,11 +335,11 @@ int main(int argc, char *argv[]) {
 	psh.protocol = IPPROTO_TCP;
 	psh.tcp_length = htons(sizeof(struct tcphdr) + strlen(data));
 
-	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + 20 + strlen(data);
+	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data);
 	pseudogram = malloc(psize);
 
 	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + 20 + strlen(data));
+	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
 
 	tcph->check = csum((unsigned short*) pseudogram, psize);
 
@@ -388,7 +391,7 @@ int main(int argc, char *argv[]) {
 			tcph->seq = new_saddr;
 		psh.source_address = new_saddr;
 		memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-		memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + 20 + strlen(data));
+		memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
 		tcph->check = csum( (unsigned short*) pseudogram , psize);
 		#endif
 	#endif
