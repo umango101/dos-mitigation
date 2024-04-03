@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
 	psh.dest_address = sin.sin_addr.s_addr;
 	psh.placeholder = 0;
 	psh.protocol = IPPROTO_TCP;
-	psh.tcp_length = htons(sizeof(struct tcphdr) + strlen(data));
+	psh.tcp_length = htons(sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
 
 	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data);
 	pseudogram = malloc(psize);
