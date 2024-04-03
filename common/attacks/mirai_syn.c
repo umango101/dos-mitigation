@@ -34,6 +34,9 @@ License: MIT
 #define PROTO_TCP_OPT_SACK  4
 #define PROTO_TCP_OPT_TSVAL 8
 
+#define TCP_OPT_LEN 20
+
+
 /*
   Maximum total packet size.  This could be larger, but packets over 1500 bytes
 	may exceed some path MTUs.  Plus a standard SYN packet (including the IP
@@ -258,7 +261,7 @@ int main(int argc, char *argv[]) {
 	struct pseudo_header psh;
 
 	// TCP Payload
-	data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr);
+	data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr) + TCP_OPT_LEN;
 	strcpy(data, "");
 
 	// Address resolution
@@ -271,7 +274,7 @@ int main(int argc, char *argv[]) {
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + 20 + strlen(data); //20 bytes of options
+	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN + strlen(data); //20 bytes of options
 	iph->id = htonl(0);	//Id of this packet, can be any value
 	iph->frag_off = 0;
 	iph->ttl = 64;
@@ -330,13 +333,13 @@ int main(int argc, char *argv[]) {
 	psh.dest_address = sin.sin_addr.s_addr;
 	psh.placeholder = 0;
 	psh.protocol = IPPROTO_TCP;
-	psh.tcp_length = htons(sizeof(struct tcphdr) + strlen(data));
+	psh.tcp_length = htons(sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
 
-	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + 20 + strlen(data);
+	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data);
 	pseudogram = malloc(psize);
 
 	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + 20 + strlen(data));
+	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
 
 	tcph->check = csum((unsigned short*) pseudogram, psize);
 
@@ -354,7 +357,7 @@ int main(int argc, char *argv[]) {
 		#if RAND_SRC_ADDR || RAND_SRC_PORT || INCREMENT_ID
 			#if RAND_SRC_ADDR
 			// Generate a new random source IP, excluding certain prefixes
-	    	new_saddr = (__be32)(random_ipv4());
+			new_saddr = (__be32)(random_ipv4());
 			#endif
 
 			#if RAND_SRC_PORT
@@ -376,20 +379,20 @@ int main(int argc, char *argv[]) {
 				limits us to ~150,000 packets per second on current-gen hardware, even
 				with multi-threading.
 				*/
-		    old_saddr = iph->saddr;
+			old_saddr = iph->saddr;
 				update_ip_csum(struct iphdr* iph, __be32 old_saddr);
-	    	update_tcp_csum(struct iphdr* iph, struct tcphdr* tcph, __be32 old_saddr);
+			update_tcp_csum(struct iphdr* iph, struct tcphdr* tcph, __be32 old_saddr);
 			#else
-		    iph->check = 0;
-		    iph->saddr = new_saddr;
-		    iph->check = csum ((unsigned short *) datagram, iph->tot_len);
+			iph->check = 0;
+			iph->saddr = new_saddr;
+			iph->check = csum ((unsigned short *) datagram, iph->tot_len);
 
-		    tcph->check = 0;
+			tcph->check = 0;
 				tcph->seq = new_saddr;
-		    psh.source_address = new_saddr;
-		    memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-		  	memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + 20 + strlen(data));
-		  	tcph->check = csum( (unsigned short*) pseudogram , psize);
+			psh.source_address = new_saddr;
+			memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
+			memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
+			tcph->check = csum( (unsigned short*) pseudogram , psize);
 			#endif
 		#endif
 
@@ -403,7 +406,7 @@ int main(int argc, char *argv[]) {
 		#endif
 
 		#if DELAY
-    	sleep(DELAY);
+		sleep(DELAY);
 		#endif
 
 		if (busy_wait) {
@@ -412,6 +415,5 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-
 	return 0;
 }
