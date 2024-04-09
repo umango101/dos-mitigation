@@ -25,7 +25,7 @@ License: MIT
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 1 // Toggle source address randomization
 #define RAND_SRC_PORT 1 // Toggle source port randomization
-#define RAND_ID 1 // Toggle incrementing of IP ID field
+#define RAND_ID 1 // Toggle IP ID randomization
 #define FAST_CSUM 0 // Toggle fast checksum updating (experimental)
 
 #define PROTO_TCP_OPT_NOP   1
@@ -297,10 +297,10 @@ int main(int argc, char *argv[]) {
 	char datagram[MAX_PACKET_SIZE];
 
 	// Pointer for the packet payload
-	char *data;
+	// char *data;
 
 	// Pointer for the pseudo-header used in TCP checksum
-	char *pseudogram;
+	// char *pseudogram;
 
 	// Zero out the packet buffer
 	memset (datagram, 0, MAX_PACKET_SIZE);
@@ -407,6 +407,8 @@ int main(int argc, char *argv[]) {
 
 		// tcph->window = rand_next() & 0xffff;
 		tcph->source = rand_next() & 0xffff;
+		tcph->dest =htons(80);
+		sin.sin_port = tcph->dest;
 		tcph->seq = rand_next() & 0xffff;
 
 		iph->check = 0;
