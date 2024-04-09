@@ -430,7 +430,7 @@ int main(int argc, char *argv[]) {
 		#endif
 
 		#if RAND_TTL
-			tcph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN
+			iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
 		#endif
 
 		iph->check = 0;
