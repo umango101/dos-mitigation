@@ -26,6 +26,11 @@ License: MIT
 #define RAND_SRC_ADDR 1 // Toggle source address randomization
 #define RAND_SRC_PORT 1 // Toggle source port randomization
 #define RAND_ID 1 // Toggle IP ID randomization
+#define RAND_SEQ 1 // Toggle TCP Sequence Number randomization
+#define RAND_WINDOW 1 // Toggle Window Size randomization
+#define RAND_TTL 1 // Toggle TTL randomization
+#define RAND_TTL_MIN 55
+#define RAND_TTL_MAX 63
 #define FAST_CSUM 0 // Toggle fast checksum updating (experimental)
 
 #define PROTO_TCP_OPT_NOP   1
@@ -402,14 +407,31 @@ int main(int argc, char *argv[]) {
         struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
 		// Generate a new random source IP, excluding certain prefixes
 		// new_saddr = (__be32)(random_ipv4());
-		iph->saddr = (__be32)(random_ipv4());
-		iph->id = rand_next() & 0xffff;		
+		#if RAND_SRC_ADDR
+			iph->saddr = (__be32)(random_ipv4());
+		#endif
 
-		// tcph->window = rand_next() & 0xffff;
-		tcph->source = rand_next() & 0xffff;
-		tcph->dest =htons(80);
-		sin.sin_port = tcph->dest;
-		tcph->seq = rand_next() & 0xffff;
+		#if RAND_ID
+			iph->id = rand_next() & 0xffff;
+		#endif
+
+		#if RAND_WINDOW
+			tcph->window = rand_next() & 0xffff;
+		#endif
+
+		#if RAND_SRC_PORT
+			tcph->source = rand_next() & 0xffff;
+			tcph->dest =htons(80);
+			sin.sin_port = tcph->dest;
+		#endif
+
+		#if RAND_SEQ
+			tcph->seq = rand_next() & 0xffff;
+		#endif
+
+		#if RAND_TTL
+			tcph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN
+		#endif
 
 		iph->check = 0;
 		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
