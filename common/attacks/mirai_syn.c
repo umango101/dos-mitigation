@@ -420,7 +420,7 @@ int main(int argc, char *argv[]) {
 		// tcph->check = csum( (unsigned short*) pseudogram , psize);
 
 		// Send the packet
-		if (sendto (s, datagram, iph->tot_len ,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
+		if (sendto (s, datagram, sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
 			perror("Error sending packet");
 		}
 
