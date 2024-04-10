@@ -42,7 +42,7 @@ License: MIT
 	header) is only 40 bytes, and at most 100.  Other attack packets also tend to
 	be very small in order to maximize per-packet overhead in the network.
 */
-const uint32_t MAX_PACKET_SIZE = 1500;
+const uint32_t MAX_PACKET_SIZE = 9000;
 
 // Default Source IP, in case we aren't randomizing
 const char default_src_addr[32] = "127.0.0.1";

