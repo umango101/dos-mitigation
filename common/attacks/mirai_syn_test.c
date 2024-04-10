@@ -337,10 +337,6 @@ int main(int argc, char *argv[]) {
 	*opts++ = 3;
 	*opts++ = 6; // 2^6 = 64, window size scale = 64
 
-	struct iphdr *iph = (struct iphdr *)datagram;
-	struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
-	// Generate a new random source IP, excluding certain prefixes
-	// new_saddr = (__be32)(random_ipv4());
 	#if RAND_SRC_ADDR
 		iph->saddr = (__be32)(random_ipv4());
 	#endif
