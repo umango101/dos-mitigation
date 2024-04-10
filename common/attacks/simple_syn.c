@@ -24,7 +24,7 @@ License: MIT
 #define DEBUG 0 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 1 // Toggle source address randomization
-#define RAND_SRC_PORT 0 // Toggle source port randomization
+#define RAND_SRC_PORT 1 // Toggle source port randomization
 #define RAND_ID 0 // Toggle IP ID randomization
 #define RAND_SEQ 0 // Toggle TCP Sequence Number randomization
 #define RAND_WINDOW 0 // Toggle Window Size randomization
@@ -300,7 +300,7 @@ int main(int argc, char *argv[]) {
 	tcph->dest = sin.sin_port;
 	tcph->seq = 0;
 	tcph->ack_seq = 0;
-	tcph->doff = 5; // TCP Header Size in 32-bit words (5-15)
+	tcph->doff = 5 + (TCP_OPT_LEN/4); // TCP Header Size in 32-bit words (5-15)
 	tcph->fin=0;
 	tcph->syn=1;
 	tcph->rst=0;
