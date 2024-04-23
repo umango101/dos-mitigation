@@ -161,6 +161,17 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment,
                             )
                     duration = dbh.result_as_value(conn.db_query("select settings['client_duration'] from experiments where id = {}".format(experiment_id)))
 
+                    average_tps = len(success_data)/float(duration)
+                    conn.insert_dict_as_row("data", {
+                        'metric': "Average Transactions per Second",
+                        'host': host_id,
+                        'experiment': experiment_id,
+                        'attack_enabled': attack_enabled,
+                        'mitigation_enabled': mitigation_enabled,
+                        'timestamp': None,
+                        'value': average_tps
+                    })
+
                     if tps_bin > 0:
                         binned_success_data = {}
                         for start, duration in success_data:
@@ -181,7 +192,7 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment,
                                 'value': tps
                             })
                     else:
-                        tps = len(success_data)/float(duration)
+                        tps = average_tps
                         conn.insert_dict_as_row("data", {
                             'metric': "Transactions per Second",
                             'host': host_id,
