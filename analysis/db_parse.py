@@ -12,7 +12,7 @@ from datetime import datetime
 log_dir = "/usr/local/dos-mitigation/data"
 db_name = "dos"
 
-maximize_metrics = ['Transaction Status', "Transactions per Second"]
+maximize_metrics = ['Transaction Status', "Transactions per Second", "Average Transactions per Second"]
 minimize_metrics = ['Transaction Duration']
 tps_bin_size = 1
 
