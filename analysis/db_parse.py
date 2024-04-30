@@ -188,7 +188,7 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment,
                                 'experiment': experiment_id,
                                 'attack_enabled': attack_enabled,
                                 'mitigation_enabled': mitigation_enabled,
-                                'timestamp': None,
+                                'timestamp': bin*tps_bin,
                                 'value': tps
                             })
                     else:
@@ -233,11 +233,10 @@ def analyze_experiment(conn: dbh.Connection, experiment):
                     WHEN mitigation_enabled IS TRUE
                         AND attack_enabled IS TRUE THEN 'ma'
                 END mode,
-                AVG(value)
+                value
             FROM data
             WHERE
                 experiment = {} AND metric = '{}'
-            GROUP BY host, mode
         """.format(experiment_id, metric)
 
         data = conn.db_query(query)
