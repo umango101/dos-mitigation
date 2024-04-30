@@ -1,0 +1,5 @@
+#!/bin/bash
+server_ip=$1
+server_port=443
+
+curl -s --max-time 0.001 http://$server_ip:$server_port/junk/foo.bin -k -o /dev/null -r 1-2

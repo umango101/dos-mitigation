@@ -25,12 +25,12 @@ License: MIT
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 1 // Toggle source address randomization
 #define RAND_SRC_PORT 1 // Toggle source port randomization
-#define RAND_ID 1 // Toggle IP ID randomization
-#define RAND_SEQ 1 // Toggle TCP Sequence Number randomization
-#define RAND_WINDOW 1 // Toggle Window Size randomization
-#define RAND_TTL 1 // Toggle TTL randomization
-#define RAND_TTL_MIN 55
-#define RAND_TTL_MAX 63
+#define RAND_ID 0 // Toggle IP ID randomization
+#define RAND_SEQ 0 // Toggle TCP Sequence Number randomization
+#define RAND_WINDOW 0 // Toggle Window Size randomization
+#define RAND_TTL 0 // Toggle TTL randomization
+#define RAND_TTL_MIN 64
+#define RAND_TTL_MAX 64
 
 #define PROTO_TCP_OPT_NOP   1
 #define PROTO_TCP_OPT_MSS   2
@@ -38,7 +38,7 @@ License: MIT
 #define PROTO_TCP_OPT_SACK  4
 #define PROTO_TCP_OPT_TSVAL 8
 
-#define TCP_OPT_LEN 20
+#define TCP_OPT_LEN 0
 
 
 /*
@@ -300,7 +300,7 @@ int main(int argc, char *argv[]) {
 	tcph->dest = sin.sin_port;
 	tcph->seq = 0;
 	tcph->ack_seq = 0;
-	tcph->doff = 10; // TCP Header Size in 32-bit words (5-15)
+	tcph->doff = 5 + (TCP_OPT_LEN/4); // TCP Header Size in 32-bit words (5-15)
 	tcph->fin=0;
 	tcph->syn=1;
 	tcph->rst=0;
@@ -311,31 +311,31 @@ int main(int argc, char *argv[]) {
 	tcph->check = 0;
 	tcph->urg_ptr = 0;
 
-	// TCP MSS
-	*opts++ = PROTO_TCP_OPT_MSS;    // Kind
-	*opts++ = 4;                    // Length
-	*((uint16_t *)opts) = htons(1400 + (rand_next() & 0x0f));
-	opts += sizeof (uint16_t);
+	// // TCP MSS
+	// *opts++ = PROTO_TCP_OPT_MSS;    // Kind
+	// *opts++ = 4;                    // Length
+	// *((uint16_t *)opts) = htons(1400 + (rand_next() & 0x0f));
+	// opts += sizeof (uint16_t);
 
-	// TCP SACK permitted
-	*opts++ = PROTO_TCP_OPT_SACK;
-	*opts++ = 2;
+	// // TCP SACK permitted
+	// *opts++ = PROTO_TCP_OPT_SACK;
+	// *opts++ = 2;
 
-	// TCP timestamps
-	*opts++ = PROTO_TCP_OPT_TSVAL;
-	*opts++ = 10;
-	*((uint32_t *)opts) = rand_next();
-	opts += sizeof (uint32_t);
-	*((uint32_t *)opts) = 0;
-	opts += sizeof (uint32_t);
+	// // TCP timestamps
+	// *opts++ = PROTO_TCP_OPT_TSVAL;
+	// *opts++ = 10;
+	// *((uint32_t *)opts) = rand_next();
+	// opts += sizeof (uint32_t);
+	// *((uint32_t *)opts) = 0;
+	// opts += sizeof (uint32_t);
 
-	// TCP nop
-	*opts++ = 1;
+	// // TCP nop
+	// *opts++ = 1;
 
-	// TCP window scale
-	*opts++ = PROTO_TCP_OPT_WSS;
-	*opts++ = 3;
-	*opts++ = 6; // 2^6 = 64, window size scale = 64
+	// // TCP window scale
+	// *opts++ = PROTO_TCP_OPT_WSS;
+	// *opts++ = 3;
+	// *opts++ = 6; // 2^6 = 64, window size scale = 64
 
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {

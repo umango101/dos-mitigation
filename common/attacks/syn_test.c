@@ -337,60 +337,53 @@ int main(int argc, char *argv[]) {
 	*opts++ = 3;
 	*opts++ = 6; // 2^6 = 64, window size scale = 64
 
-	// Generate packets forever, the caller must terminate this program manually
-	while(1) {
-		struct iphdr *iph = (struct iphdr *)datagram;
-        struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
-		// Generate a new random source IP, excluding certain prefixes
-		// new_saddr = (__be32)(random_ipv4());
-		#if RAND_SRC_ADDR
-			iph->saddr = (__be32)(random_ipv4());
-		#endif
+	#if RAND_SRC_ADDR
+		iph->saddr = (__be32)(random_ipv4());
+	#endif
 
-		#if RAND_ID
-			iph->id = rand_next() & 0xffff;
-		#endif
+	#if RAND_ID
+		iph->id = rand_next() & 0xffff;
+	#endif
 
-		#if RAND_WINDOW
-			tcph->window = rand_next() & 0xffff;
-		#endif
+	#if RAND_WINDOW
+		tcph->window = rand_next() & 0xffff;
+	#endif
 
-		#if RAND_SRC_PORT
-			tcph->source = rand_next() & 0xffff;
-			tcph->dest =htons(80);
-			sin.sin_port = tcph->dest;
-		#endif
+	#if RAND_SRC_PORT
+		tcph->source = rand_next() & 0xffff;
+		tcph->dest =htons(80);
+		sin.sin_port = tcph->dest;
+	#endif
 
-		#if RAND_SEQ
-			tcph->seq = rand_next() & 0xffff;
-		#endif
+	#if RAND_SEQ
+		tcph->seq = rand_next() & 0xffff;
+	#endif
 
-		#if RAND_TTL
-			iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
-		#endif
+	#if RAND_TTL
+		iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
+	#endif
 
-		iph->check = 0;
-		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
-		tcph->check = 0;
-		tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
+	iph->check = 0;
+	iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
+	tcph->check = 0;
+	tcph->check = checksum_tcpudp(iph, tcph, htons(sizeof (struct tcphdr) + TCP_OPT_LEN), sizeof (struct tcphdr) + TCP_OPT_LEN);
 
-		// Send the packet
-		if (sendto (s, datagram, sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
-			perror("Error sending packet");
-		}
+	// Send the packet
+	if (sendto (s, datagram, sizeof (struct iphdr) + sizeof (struct tcphdr) + TCP_OPT_LEN,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
+		perror("Error sending packet");
+	}
 
-		#if DEBUG > 1
-			printf("Sent packet from %s:%u to %s:%u\n", iph->saddr, tcph->source, iph->daddr, tcph->dest);
-		#endif
+	#if DEBUG > 1
+		printf("Sent packet from %s:%u to %s:%u\n", iph->saddr, tcph->source, iph->daddr, tcph->dest);
+	#endif
 
-		#if DELAY
-			sleep(DELAY);
-		#endif
+	#if DELAY
+		sleep(DELAY);
+	#endif
 
-		if (busy_wait) {
-			for (int i=0; i<busy_wait; i++) {
-				busy_wait_var += 1;
-			}
+	if (busy_wait) {
+		for (int i=0; i<busy_wait; i++) {
+			busy_wait_var += 1;
 		}
 	}
 	return 0;

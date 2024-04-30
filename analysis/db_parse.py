@@ -1,9 +1,10 @@
 import db_helpers as dbh
 import json
+import math
+import os
 import pandas as pd
 from parse_config import parse_config
 from psycopg2.extras import execute_values
-import os
 from pprint import pprint
 from datetime import datetime
 
@@ -11,9 +12,9 @@ from datetime import datetime
 log_dir = "/usr/local/dos-mitigation/data"
 db_name = "dos"
 
-maximize_metrics = ['Transaction Status', "Transactions per Second"]
+maximize_metrics = ['Transaction Status', "Transactions per Second", "Average Transactions per Second"]
 minimize_metrics = ['Transaction Duration']
-
+tps_bin_size = 1
 
 def parse_csv(path):
     # print("Parsing TCP log: {}".format(path))
@@ -92,10 +93,10 @@ def parse_session(conn: dbh.Connection, materialization, session):
     for experiment in os.listdir("{}/{}/{}".format(log_dir, materialization, session)):
         if experiment.startswith('.'): 
             continue
-        parse_experiment(conn, materialization, session, experiment)
+        parse_experiment(conn, materialization, session, experiment, tps_bin_size)
 
 
-def parse_experiment(conn: dbh.Connection, materialization, session, experiment):
+def parse_experiment(conn: dbh.Connection, materialization, session, experiment, tps_bin=1):
     print("Parsing experiment: {}".format(experiment))
 
     # timestamp = datetime.fromisoformat(experiment)
@@ -159,16 +160,48 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment)
                                 fetch=False
                             )
                     duration = dbh.result_as_value(conn.db_query("select settings['client_duration'] from experiments where id = {}".format(experiment_id)))
-                    tps = len(success_data)/float(duration)
+
+                    average_tps = len(success_data)/float(duration)
                     conn.insert_dict_as_row("data", {
-                        'metric': "Transactions per Second",
+                        'metric': "Average Transactions per Second",
                         'host': host_id,
                         'experiment': experiment_id,
                         'attack_enabled': attack_enabled,
                         'mitigation_enabled': mitigation_enabled,
                         'timestamp': None,
-                        'value': tps
+                        'value': average_tps
                     })
+
+                    if tps_bin > 0:
+                        binned_success_data = {}
+                        for start, duration in success_data:
+                            bin_number = math.floor((float(start)+float(duration))/ tps_bin) # based on end time
+                            if bin_number in binned_success_data:
+                                binned_success_data[bin_number] += 1
+                            else:
+                                binned_success_data[bin_number] = 1
+                        for bin, n_success in binned_success_data.items():
+                            tps = float(n_success / tps_bin)
+                            conn.insert_dict_as_row("data", {
+                                'metric': "Transactions per Second",
+                                'host': host_id,
+                                'experiment': experiment_id,
+                                'attack_enabled': attack_enabled,
+                                'mitigation_enabled': mitigation_enabled,
+                                'timestamp': bin*tps_bin,
+                                'value': tps
+                            })
+                    else:
+                        tps = average_tps
+                        conn.insert_dict_as_row("data", {
+                            'metric': "Transactions per Second",
+                            'host': host_id,
+                            'experiment': experiment_id,
+                            'attack_enabled': attack_enabled,
+                            'mitigation_enabled': mitigation_enabled,
+                            'timestamp': None,
+                            'value': tps
+                        })
 
                 else:
                     continue
@@ -200,13 +233,11 @@ def analyze_experiment(conn: dbh.Connection, experiment):
                     WHEN mitigation_enabled IS TRUE
                         AND attack_enabled IS TRUE THEN 'ma'
                 END mode,
-                AVG(value)
+                value
             FROM data
             WHERE
                 experiment = {} AND metric = '{}'
-            GROUP BY host, mode""".format(
-                experiment_id, metric
-        )
+        """.format(experiment_id, metric)
 
         data = conn.db_query(query)
         data_dict = {}
