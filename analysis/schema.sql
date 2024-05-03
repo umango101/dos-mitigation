@@ -62,7 +62,8 @@ CREATE TABLE "results" (
   "efficacy_pct" float,
   "efficacy_pct_threat" float,
   "efficacy_relative" float,
-  "overhead_pct" float
+  "overhead_pct" float,
+  "bin_start" float
 );
 
 ALTER TABLE "materializations" ADD FOREIGN KEY ("revision") REFERENCES "revisions" ("id");

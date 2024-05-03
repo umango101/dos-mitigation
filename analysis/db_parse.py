@@ -14,7 +14,7 @@ db_name = "dos"
 
 maximize_metrics = ['Transaction Status', "Transactions per Second", "Average Transactions per Second"]
 minimize_metrics = ['Transaction Duration']
-tps_bin_size = 1
+tps_bin_size = 10
 
 def parse_csv(path):
     # print("Parsing TCP log: {}".format(path))
@@ -168,7 +168,7 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment,
                         'experiment': experiment_id,
                         'attack_enabled': attack_enabled,
                         'mitigation_enabled': mitigation_enabled,
-                        'timestamp': None,
+                        'timestamp': -1,
                         'value': average_tps
                     })
 
@@ -199,7 +199,7 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment,
                             'experiment': experiment_id,
                             'attack_enabled': attack_enabled,
                             'mitigation_enabled': mitigation_enabled,
-                            'timestamp': None,
+                            'timestamp': 0,
                             'value': tps
                         })
 
@@ -223,6 +223,7 @@ def analyze_experiment(conn: dbh.Connection, experiment):
         query = """
             SELECT
                 host,
+                timestamp,
                 CASE
                     WHEN mitigation_enabled IS FALSE
                         AND attack_enabled IS FALSE THEN 'ub'
@@ -241,75 +242,79 @@ def analyze_experiment(conn: dbh.Connection, experiment):
 
         data = conn.db_query(query)
         data_dict = {}
-        for host_id, mode, value in data:
+        for host_id, timestamp, mode, value in data:
             if host_id not in data_dict:
                 data_dict[host_id] = {}
-            data_dict[host_id][mode] = value
-        for host_id, d in data_dict.items():
-            for m in ["ub", "mb", "ua", "ma"]:
-                if m not in d:
-                    d[m] = 0
+            if timestamp not in data_dict[host_id]:
+                data_dict[host_id][timestamp] = {}
+            data_dict[host_id][timestamp][mode] = value
+        for host_id, dd in data_dict.items():
+            for timestamp, d in dd.items():
+                for m in ["ub", "mb", "ua", "ma"]:
+                    if m not in d:
+                        d[m] = 0
 
-            UB = d["ub"]
-            MB = d["mb"]
-            UA = d["ua"]
-            MA = d["ma"]
+                UB = d["ub"]
+                MB = d["mb"]
+                UA = d["ua"]
+                MA = d["ma"]
 
-            baseline = UB
-            threat = baseline - UA
-            damage = baseline - MA
-            overhead = baseline - MB
-            if minimize:
-                threat *= -1.0
-                damage *= -1.0
-                overhead *= -1.0
-            
-            efficacy = threat - damage
+                baseline = UB
+                threat = baseline - UA
+                damage = baseline - MA
+                overhead = baseline - MB
+                if minimize:
+                    threat *= -1.0
+                    damage *= -1.0
+                    overhead *= -1.0
+                
+                efficacy = threat - damage
 
-            if baseline == 0:
-                damage_pct = 0
-                threat_pct = 0
-                overhead_pct = 0
-                efficacy_pct = 0
-            else:
-                damage_pct = (damage / baseline) * 100.0
-                threat_pct = (threat / baseline) * 100.0
-                overhead_pct = (overhead / baseline) * 100.0
-                efficacy_pct = (efficacy / baseline) * 100.0
-
-            if (threat <= 0):
-                efficacy_pct_threat = 0
-            else:
-                efficacy_pct_threat = (efficacy / threat) * 100.0
-
-            if efficacy_pct > 0:
-                if (threat_pct <= 0):
-                    efficacy_relative = 0
+                if baseline == 0:
+                    damage_pct = 0
+                    threat_pct = 0
+                    overhead_pct = 0
+                    efficacy_pct = 0
                 else:
-                    efficacy_relative = efficacy_pct * (threat_pct / 100.0)
-            else:
-                 efficacy_relative = efficacy_pct
+                    damage_pct = (damage / baseline) * 100.0
+                    threat_pct = (threat / baseline) * 100.0
+                    overhead_pct = (overhead / baseline) * 100.0
+                    efficacy_pct = (efficacy / baseline) * 100.0
 
-            result_row = {
-                "experiment": experiment_id,
-                "metric": metric,
-                "host": host_id,
-                "ub": UB,
-                "mb": MB,
-                "ua": UA,
-                "ma": MA,
-                "threat": threat,
-                "damage": damage,
-                "efficacy": efficacy,
-                "overhead": overhead,
-                "threat_pct": threat_pct,
-                "damage_pct": damage_pct,
-                "efficacy_pct": efficacy_pct,
-                "efficacy_pct_threat": efficacy_pct_threat,
-                "efficacy_relative": efficacy_relative,
-                "overhead_pct": overhead_pct
-            }
-            conn.insert_dict_as_row("results", result_row)
+                if (threat <= 0):
+                    efficacy_pct_threat = 0
+                else:
+                    efficacy_pct_threat = (efficacy / threat) * 100.0
+
+                if efficacy_pct > 0:
+                    if (threat_pct <= 0):
+                        efficacy_relative = 0
+                    else:
+                        efficacy_relative = efficacy_pct * (threat_pct / 100.0)
+                else:
+                    efficacy_relative = efficacy_pct
+
+                result_row = {
+                    "experiment": experiment_id,
+                    "metric": metric,
+                    "host": host_id,
+                    "ub": UB,
+                    "mb": MB,
+                    "ua": UA,
+                    "ma": MA,
+                    "threat": threat,
+                    "damage": damage,
+                    "efficacy": efficacy,
+                    "overhead": overhead,
+                    "threat_pct": threat_pct,
+                    "damage_pct": damage_pct,
+                    "efficacy_pct": efficacy_pct,
+                    "efficacy_pct_threat": efficacy_pct_threat,
+                    "efficacy_relative": efficacy_relative,
+                    "overhead_pct": overhead_pct,
+                    "bin_start": timestamp
+                }
+                conn.insert_dict_as_row("results", result_row)
 
     # mean_tps = db.groupby(["mode"])["tps"].mean()
     # if mean_tps["UB"] == 0 :
