@@ -335,7 +335,7 @@ int main(int argc, char *argv[]) {
 		// 	dst_port = default_dst_port;
 		// }
 		if (argc > 2) {
-			busywait = strcpy(busywait, argv[2]);
+			strcpy(busywait, argv[2]);
 			if (argc > 3) {
 				strcpy(default_src_addr, argv[3]);
 			}
@@ -439,7 +439,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	__be32 new_saddr;
+	__be32 new_saddr = inet_addr(default_src_addr);
 
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
@@ -447,8 +447,6 @@ int main(int argc, char *argv[]) {
 			#if RAND_SRC_ADDR
 			// Generate a new random source IP, excluding certain prefixes
 				new_saddr = (__be32)(random_ipv4());
-			#else
-				new_saddr = inet_addr(default_src_addr);
 			#endif
 
 			#if RAND_SRC_PORT
