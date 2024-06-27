@@ -19,12 +19,6 @@ License: MIT
 #include <time.h>
 #include <linux/if_ether.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <arpa/inet.h>
 
 #define DEBUG 1 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
@@ -331,7 +325,7 @@ int main(int argc, char *argv[]) {
 	// Get target (and optionally source) IP address
 	char dst_addr[32];
 	uint16_t dst_port;
-	uint16_t busywait = 0;
+	char busywait[32];
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
@@ -341,7 +335,7 @@ int main(int argc, char *argv[]) {
 		// 	dst_port = default_dst_port;
 		// }
 		if (argc > 2) {
-			busywait = (uint16_t) argv[2];
+			busywait = strcpy(busywait, argv[2]);
 			if (argc > 3) {
 				strcpy(default_src_addr, argv[3]);
 			}
