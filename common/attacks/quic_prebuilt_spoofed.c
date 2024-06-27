@@ -352,6 +352,7 @@ int main(int argc, char *argv[]) {
 	// Get target (and optionally source) IP address
 	char dst_addr[32];
 	uint16_t dst_port;
+	uint16_t busywait = 0;
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
@@ -360,12 +361,16 @@ int main(int argc, char *argv[]) {
 		// } else {
 		// 	dst_port = default_dst_port;
 		// }
+		if (argc > 2) {
+			busywait = (uint16_t) argv[2];
+			if (argc > 3) {
+				strcpy(default_src_addr, argv[3]);
+			}
+		}
 	} else {
-		printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
+		printf("Please specify a target IP address\n");
 		exit(1);
 	}
-
-	default_src_addr = get_default_src_addr();
 
 	#if DEBUG
 		printf ("Flooding target %s:%u\n", dst_addr, dst_port);

