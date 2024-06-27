@@ -245,27 +245,6 @@ void checkIPbuffer(char *IPbuffer)
     }
 }
 
-char* get_default_src_addr(void) {
-	char hostbuffer[256];
-    int hostname;
-	struct hostent *host_entry;
-	char *IPbuffer;
- 
-    // To retrieve hostname
-    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
-    if (hostname == -1) {
-		return "127.0.0.1";
-	}
-
-    host_entry = gethostbyname(hostbuffer);
-	if (host_entry == NULL) {
-		return "127.0.0.1";
-	} 
-
-    IPbuffer = inet_ntoa(*((struct in_addr*)host_entry->h_addr_list[0]));
-    return IPbuffer
-}
-
 static uint32_t random_ipv4(void) {
 	// Adapted from Mirai (https://github.com/jgamblin/Mirai-Source-Code)
 	uint32_t addr;

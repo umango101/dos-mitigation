@@ -208,6 +208,12 @@ int main(int argc, char *argv[]) {
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
+		if (argc > 2) {
+			busy_wait = (uint32_t)atoi(argv[2]);
+			if (argc > 3) {
+				strcpy(default_src_addr, argv[3]);
+			}
+		}
 	} else {
     printf("Please specify a target IP address, and optionally a port number (default destination port is 80).\nExample usage: syn_flood 127.0.0.1 80\n");
 		exit(1);
@@ -218,12 +224,6 @@ int main(int argc, char *argv[]) {
 	// } else {
 	// 	dst_port = default_dst_port;
 	// }
-
-	if (argc > 2) {
-		busy_wait = (uint32_t)atoi(argv[2]);
-	} else {
-		busy_wait = 0;
-	}
 
 	if (busy_wait < 0) {
 		#if DEBUG
