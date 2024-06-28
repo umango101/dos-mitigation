@@ -203,15 +203,18 @@ int main(int argc, char *argv[]) {
 
 	// Get target (and optionally source) IP address
 	char dst_addr[32];
-	uint16_t dst_port;
-	uint32_t busy_wait;
+	strcpy(dst_addr, default_dst_addr);
+	char src_addr[32];
+	strcpy(src_addr, default_src_addr);
+	uint16_t dst_port = default_dst_port;
+	uint16_t busywait = 0;
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
 		if (argc > 2) {
-			busy_wait = (uint32_t)atoi(argv[2]);
+			busywait = atoi(argv[2]);
 			if (argc > 3) {
-				strcpy(default_src_addr, argv[3]);
+				strcpy(src_addr, argv[3]);
 			}
 		}
 	} else {
@@ -224,6 +227,8 @@ int main(int argc, char *argv[]) {
 	// } else {
 	// 	dst_port = default_dst_port;
 	// }
+
+	
 
 	if (busy_wait < 0) {
 		#if DEBUG
@@ -239,7 +244,7 @@ int main(int argc, char *argv[]) {
 		#if RAND_SRC_ADDR
 			printf("Randomizing source address\n");
 		#else
-			printf("Using source address %s\n", default_src_addr);
+			printf("Using source address %s\n", src_addr);
 		#endif
 
 		#if RAND_SRC_PORT
@@ -292,7 +297,7 @@ int main(int argc, char *argv[]) {
 	iph->ttl = 64;
 	iph->protocol = IPPROTO_TCP;
 	iph->check = 0;		//Set to 0 before calculating checksum
-	iph->saddr = inet_addr(default_src_addr);
+	iph->saddr = inet_addr(src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
 
 	// TCP Header

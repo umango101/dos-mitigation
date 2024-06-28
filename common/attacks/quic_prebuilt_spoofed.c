@@ -332,11 +332,6 @@ int main(int argc, char *argv[]) {
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
-		// if (argc > 2) {
-		// 	dst_port = (uint16_t)atoi(argv[2]);
-		// } else {
-		// 	dst_port = default_dst_port;
-		// }
 		if (argc > 2) {
 			busywait = atoi(argv[2]);
 			if (argc > 3) {
