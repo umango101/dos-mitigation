@@ -323,9 +323,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Get target (and optionally source) IP address
-	char dst_addr[32];
+	char dst_addr[32] = default_dst_addr;
+	char src_addr[32] = default_src_addr;
 	uint16_t dst_port;
-	char busywait[32];
+	uint16_t busywait;
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
@@ -335,9 +336,9 @@ int main(int argc, char *argv[]) {
 		// 	dst_port = default_dst_port;
 		// }
 		if (argc > 2) {
-			strcpy(busywait, argv[2]);
+			strcpy(busywait, (uint16_t)argv[2]);
 			if (argc > 3) {
-				strcpy(default_src_addr, argv[3]);
+				strcpy(src_addr, argv[3]);
 			}
 		}
 	} else {
@@ -351,7 +352,7 @@ int main(int argc, char *argv[]) {
 		#if RAND_SRC_ADDR
 			printf("Randomizing source address\n");
 		#else
-			printf("Using source address %s\n", default_src_addr);
+			printf("Using source address %s\n", src_addr);
 		#endif
 
 		#if RAND_SRC_PORT
@@ -405,7 +406,7 @@ int main(int argc, char *argv[]) {
 	iph->ttl = 255;
 	iph->protocol = IPPROTO_UDP;
 	iph->check = 0;		//Set to 0 before calculating checksum
-	iph->saddr = inet_addr(default_src_addr);
+	iph->saddr = inet_addr(src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
 
 	// IP checksum
@@ -418,7 +419,7 @@ int main(int argc, char *argv[]) {
 	udph->check = 0;
 
 	// UDP checksum
-	psh.source_address = inet_addr(default_src_addr);
+	psh.source_address = inet_addr(src_addr);
 	psh.dest_address = sin.sin_addr.s_addr;
 	psh.placeholder = 0;
 	psh.protocol = IPPROTO_UDP;
@@ -439,7 +440,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	__be32 new_saddr = inet_addr(default_src_addr);
+	__be32 new_saddr = inet_addr(src_addr);
 
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
