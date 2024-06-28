@@ -325,8 +325,8 @@ int main(int argc, char *argv[]) {
 	// Get target (and optionally source) IP address
 	char dst_addr[32] = default_dst_addr;
 	char src_addr[32] = default_src_addr;
-	uint16_t dst_port;
-	uint16_t busywait;
+	uint16_t dst_port=default_dst_port;
+	uint16_t busywait=0;
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
 		// 	dst_port = default_dst_port;
 		// }
 		if (argc > 2) {
-			strcpy(busywait, (uint16_t)argv[2]);
+			busywait = uint16_t)argv[2];
 			if (argc > 3) {
 				strcpy(src_addr, argv[3]);
 			}
