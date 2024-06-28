@@ -323,8 +323,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Get target (and optionally source) IP address
-	char dst_addr[32] = default_dst_addr;
-	char src_addr[32] = default_src_addr;
+	char dst_addr[32];
+	strcpy(dst_addr, default_dst_addr);
+	char src_addr[32];
+	strcpy(src_addr, default_src_addr);
 	uint16_t dst_port = default_dst_port;
 	uint16_t busywait = 0;
 
