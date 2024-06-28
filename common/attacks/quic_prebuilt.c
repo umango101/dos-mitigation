@@ -45,6 +45,8 @@ const uint16_t default_src_port = 9000;
 // Destination Port, unless otherwise specified with argv[2]
 const uint16_t default_dst_port = 443; // HTTPS
 
+volatile int busy_wait_var;
+
 char payload_bytes[] = {
 	0xc6, 0x00, 0x00, 0x00, 0x01, 0x14, 0x39, 0xfd,
 	0x03, 0xc3, 0xc4, 0x42, 0x11, 0x72, 0xc9, 0x5b,
@@ -478,6 +480,13 @@ int main(int argc, char *argv[]) {
 		#if DELAY
 			sleep(DELAY);
 		#endif
+
+		if (busywait > 0) {
+			busy_wait_var = 0;
+			for (int i=0; i<busywait; i++) {
+				busy_wait_var += 1;
+			}
+		}
 	}
 
 	return 0;
