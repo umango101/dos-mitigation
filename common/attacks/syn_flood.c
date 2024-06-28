@@ -230,9 +230,9 @@ int main(int argc, char *argv[]) {
 
 	
 
-	if (busy_wait < 0) {
+	if (busywait < 0) {
 		#if DEBUG
-			printf("Received negative value for busywait parameter %u, exiting.\n", busy_wait);
+			printf("Received negative value for busywait parameter %u, exiting.\n", busywait);
 		#endif
 		return 1;
 	}
@@ -392,8 +392,9 @@ int main(int argc, char *argv[]) {
 			sleep(DELAY);
 		#endif
 
-		if (busy_wait) {
-			for (int i=0; i<busy_wait; i++) {
+		if (busywait > 0) {
+			busy_wait_var = 0;
+			for (int i=0; i<busywait; i++) {
 				busy_wait_var += 1;
 			}
 		}
