@@ -336,7 +336,7 @@ int main(int argc, char *argv[]) {
 		// 	dst_port = default_dst_port;
 		// }
 		if (argc > 2) {
-			busywait = uint16_t)argv[2];
+			busywait = (uint16_t)argv[2];
 			if (argc > 3) {
 				strcpy(src_addr, argv[3]);
 			}
