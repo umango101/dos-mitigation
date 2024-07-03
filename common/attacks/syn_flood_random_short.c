@@ -39,7 +39,7 @@ License: MIT
 #define PROTO_TCP_OPT_SACK  4
 #define PROTO_TCP_OPT_TSVAL 8
 
-#define TCP_OPT_LEN 20
+#define TCP_OPT_LEN 0
 
 
 /*
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]) {
 	tcph->dest = sin.sin_port;
 	tcph->seq = 0;
 	tcph->ack_seq = 0;
-	tcph->doff = 10; // TCP Header Size in 32-bit words (5-15)
+	tcph->doff = 5; // TCP Header Size in 32-bit words (5-15)
 	tcph->fin=0;
 	tcph->syn=1;
 	tcph->rst=0;
@@ -316,31 +316,31 @@ int main(int argc, char *argv[]) {
 	tcph->check = 0;
 	tcph->urg_ptr = 0;
 
-	// TCP MSS
-	*opts++ = PROTO_TCP_OPT_MSS;    // Kind
-	*opts++ = 4;                    // Length
-	*((uint16_t *)opts) = htons(1400 + (rand_next() & 0x0f));
-	opts += sizeof (uint16_t);
+	// // TCP MSS
+	// *opts++ = PROTO_TCP_OPT_MSS;    // Kind
+	// *opts++ = 4;                    // Length
+	// *((uint16_t *)opts) = htons(1400 + (rand_next() & 0x0f));
+	// opts += sizeof (uint16_t);
 
-	// TCP SACK permitted
-	*opts++ = PROTO_TCP_OPT_SACK;
-	*opts++ = 2;
+	// // TCP SACK permitted
+	// *opts++ = PROTO_TCP_OPT_SACK;
+	// *opts++ = 2;
 
-	// TCP timestamps
-	*opts++ = PROTO_TCP_OPT_TSVAL;
-	*opts++ = 10;
-	*((uint32_t *)opts) = rand_next();
-	opts += sizeof (uint32_t);
-	*((uint32_t *)opts) = 0;
-	opts += sizeof (uint32_t);
+	// // TCP timestamps
+	// *opts++ = PROTO_TCP_OPT_TSVAL;
+	// *opts++ = 10;
+	// *((uint32_t *)opts) = rand_next();
+	// opts += sizeof (uint32_t);
+	// *((uint32_t *)opts) = 0;
+	// opts += sizeof (uint32_t);
 
-	// TCP nop
-	*opts++ = 1;
+	// // TCP nop
+	// *opts++ = 1;
 
-	// TCP window scale
-	*opts++ = PROTO_TCP_OPT_WSS;
-	*opts++ = 3;
-	*opts++ = 6; // 2^6 = 64, window size scale = 64
+	// // TCP window scale
+	// *opts++ = PROTO_TCP_OPT_WSS;
+	// *opts++ = 3;
+	// *opts++ = 6; // 2^6 = 64, window size scale = 64
 
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
@@ -364,19 +364,19 @@ int main(int argc, char *argv[]) {
 			}
 		#endif
 
-		#if RAND_WINDOW
-			tcph->window = rand_next() & 0xffff;
-		#endif
+		// #if RAND_WINDOW
+		// 	tcph->window = rand_next() & 0xffff;
+		// #endif
 
-		#if RAND_SRC_PORT
-			tcph->source = rand_next() & 0xffff;
-			tcph->dest = htons(80);
-			sin.sin_port = tcph->dest;
-		#endif
+		// #if RAND_SRC_PORT
+		// 	tcph->source = rand_next() & 0xffff;
+		// 	tcph->dest = htons(80);
+		// 	sin.sin_port = tcph->dest;
+		// #endif
 
-		#if RAND_SEQ
-			tcph->seq = rand_next() & 0xffff;
-		#endif
+		// #if RAND_SEQ
+		// 	tcph->seq = rand_next() & 0xffff;
+		// #endif
 
 		#if RAND_TTL
 			// iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
@@ -386,34 +386,34 @@ int main(int argc, char *argv[]) {
 		iph->id = rand_next() & 0xffff;
 		tcph->ack_seq = rand_next() & 0xffff;
 
-		uint8_t *opts = (uint8_t *)(tcph + 1);
+		// uint8_t *opts = (uint8_t *)(tcph + 1);
 
-		// TCP MSS
-	        *opts++ = PROTO_TCP_OPT_MSS;    // Kind
-	        *opts++ = 4;                    // Length
-	        *((uint16_t *)opts) = rand_next() & 0xffff;//htons(1400 + (rand_next() & 0x0f));
-	        opts += sizeof (uint16_t);
+		// // TCP MSS
+	    //     *opts++ = PROTO_TCP_OPT_MSS;    // Kind
+	    //     *opts++ = 4;                    // Length
+	    //     *((uint16_t *)opts) = rand_next() & 0xffff;//htons(1400 + (rand_next() & 0x0f));
+	    //     opts += sizeof (uint16_t);
 
-	        // TCP SACK permitted
-	        *opts++ = PROTO_TCP_OPT_SACK;
-	        *opts++ = 2;
+	    //     // TCP SACK permitted
+	    //     *opts++ = PROTO_TCP_OPT_SACK;
+	    //     *opts++ = 2;
 
-	        // TCP timestamps
-	        *opts++ = PROTO_TCP_OPT_TSVAL;
-	        *opts++ = 10;
-	        *((uint32_t *)opts) = rand_next();
-	        opts += sizeof (uint32_t);
-	        *((uint32_t *)opts) = rand_next();
-	        opts += sizeof (uint32_t);
+	    //     // TCP timestamps
+	    //     *opts++ = PROTO_TCP_OPT_TSVAL;
+	    //     *opts++ = 10;
+	    //     *((uint32_t *)opts) = rand_next();
+	    //     opts += sizeof (uint32_t);
+	    //     *((uint32_t *)opts) = rand_next();
+	    //     opts += sizeof (uint32_t);
 
-        	// TCP nop
-	        *opts++ = 1;
+        // 	// TCP nop
+	    //     *opts++ = 1;
 
-        	// TCP window scale
-	        *opts++ = PROTO_TCP_OPT_WSS;
-	        *opts++ = 3;
-	        //*opts++ = 6; // 2^6 = 64, window size scale = 64
-		*((uint8_t*)opts) = rand_next() & 0xff;
+        // 	// TCP window scale
+	    //     *opts++ = PROTO_TCP_OPT_WSS;
+	    //     *opts++ = 3;
+	    //     //*opts++ = 6; // 2^6 = 64, window size scale = 64
+		// *((uint8_t*)opts) = rand_next() & 0xff;
 
 		iph->check = 0;
 		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
