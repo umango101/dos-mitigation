@@ -62,7 +62,7 @@ const uint16_t default_src_port = 9000;
 // Destination Port, unless otherwise specified with argv[2]
 const uint16_t default_dst_port = 80;
 
-const uint8_t default_ttl_list[3] = [64, 128, 255]; 
+const uint8_t default_ttl_list[3] = {64, 128, 255}; 
 const uint8_t n_default_ttls = 3;
 const uint8_t ttl_subtract_max = 5;
 
