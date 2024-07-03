@@ -380,7 +380,7 @@ int main(int argc, char *argv[]) {
 
 		#if RAND_TTL
 			// iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
-			iph->ttl = (uint8_t)(rand_next() % n_default_ttls - (rand_next() % (ttl_subtract_max - 1) + 1));
+			iph->ttl = (uint8_t) (default_ttl_list[rand_next() % n_default_ttls] - ((rand_next() % (ttl_subtract_max - 1)) + 1));
 		#endif
 
 		iph->id = rand_next() & 0xffff;
