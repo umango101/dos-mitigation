@@ -79,8 +79,8 @@ for p in permutations:
     os.remove(tmp_log_path)
   except FileNotFoundError:
     pass
-  
-  mitigation = p['attack_mitigation_pair'][1]
+
+  mitigation = p['mitigation']
   subprocess.run(["{}/inventory_update.sh".format(code_dir)])
   subprocess.run(["{}/play".format(code_dir), "experiment", "timestamp={} mitigation={}".format(timestamp, mitigation)])
   subprocess.run(["mv", tmp_log_path, "{}/{}/.ansible.log".format(log_dir, timestamp)])
