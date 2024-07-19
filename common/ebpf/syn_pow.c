@@ -153,7 +153,7 @@ static __inline bool valid_syn_pow(struct iphdr* iph, struct tcphdr* tcph) {
 	digest.ack_seq = tcph->ack_seq;
 
 	unsigned long hash = syn_hash(&digest);
-	bool valid = (hash >= POW_THRESHOLD);
+	bool valid = (hash >= (unsigned long) POW_THRESHOLD);
 	return valid;
 }
 
