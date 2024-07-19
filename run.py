@@ -53,12 +53,21 @@ for p in permutations:
   attack_type = p['attack_mitigation_pair'][0]
   mitigation = p['attack_mitigation_pair'][1]
   p['attack_type'] = attack_type
-  p['mitigation'] = mitigation
+  
+  if mitigation.startswith('syn_pow_'):
+    p['mitigation'] = "syn_pow"
+    p['syn_pow_k'] = mitigation.split('_')[-1]
+  else:
+    p['mitigation'] = mitigation
+    p['syn_pow_k'] = -1
+
   if len(p['attack_mitigation_pair']) > 2:
     p['mitigated_attack_type'] = p['attack_mitigation_pair'][2]
   else:
     p['mitigated_attack_type'] = attack_type
   p['attack_mitigation_pair'] = '"' + ','.join(p['attack_mitigation_pair']) + '"'
+
+  
 
 n_permutations = len(permutations)
 print("Testing {} different permutations of experiment parameters".format(n_permutations))
