@@ -19,3 +19,16 @@
       become: yes
     - name: detach eBPF program
       shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_egress"
+
+- name: Disable SYN PoW at Attacker Egress
+  hosts: active_attackers
+  tasks:
+    - name: setup tc qdisc
+      when: attackers_do_mitigation == 1
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
+      register: result
+      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
+      become: yes
+    - name: detach eBPF program
+      when: attackers_do_mitigation == 1
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_egress"
