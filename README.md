@@ -200,6 +200,54 @@ An umbrella for various setup operations.  Runs the following playbooks:
 
 ## Common Files
 
+### Misc. Scripts (bin)
+The `common/bin` directory contains a handful of miscellaneous helper scripts.  A brief description of each is provided below.  Note that you may need to run these with `sudo` priviliges.
+
+#### drop_outbound
+Creates `iptables` rules to drop any outbound traffic.  Normally this is run at the sink node, via the `route_config` playbook.
+
+#### hostname_to_ip
+Prints the hostname corresponding to a give IP address.  Example usage:
+```
+cd /usr/local/dos-mitigation
+./common/bin/hostname_to_ip 10.0.0.1
+```
+#### list_exp_devs
+Prints a list of all experimental network interface names (those used to communicate between different testbed nodes, as opposed to the control traffic interfaces used to communicate between testbed nodes and the XDC).  More specifically, this will list any devices that have been assigned an IP address in the 10.0.0.0/24 subnet.
+
+#### netmask_calc
+Unused.  I'm honestly not sure what this was supposed to be doing...
+
+#### nexthop_dev
+Prints the name of the network interface device that will be used when sending traffic to a given IP address  Example usage:
+```
+cd /usr/local/dos-mitigation
+./common/bin/nexthop_dev 10.0.0.1
+```
+
+#### nexthop_dev
+Prints the IP address of the next hop node on the path to a given IP address, or the address itself if the node is a direct neighbor.  Example usage:
+```
+cd /usr/local/dos-mitigation
+./common/bin/nexthop_ip 10.0.0.1
+```
+
+### toggle_ipv4_forwarding
+Enable or disable IPv4 forwarding.
+
+To enable:
+```
+cd /usr/local/dos-mitigation
+./common/bin/toggle_ipv4_forwarding 1
+```
+
+To disable:
+```
+cd /usr/local/dos-mitigation
+./common/bin/toggle_ipv4_forwarding 0
+```
+
+
 ### Mitigations
 The code for our DoS mitigations is primarily split across the `common/ebpf` and `common/mitigations` directories.  The former contains source code in eBPF-compatible C, while the latter contains shell scripts to simplify the process of compiling that source code and attaching the eBPF programs to network devices.
 
