@@ -75,6 +75,8 @@ In this case, make sure `parameters.json` includes the following three settings 
 
 Note that you can select an option by entering either its full name or just its first letter (for example: "exit" or "e").  This input is not case sensitive ("Exit", "EXIT", and "E" will also work").
 
+You can also use `dryrun.py` in place of `run.py` to check how many experiments would be run and with what sets of parameters, without actually running any of them.
+
 ## Parameter Format
 
 The general format of  `parameters.json` is a dictionary in which keys are parameter names and values are a list of list of corresponding parameter values.  All possible combinations will be tested by `run.py`, such that this dictionary...
