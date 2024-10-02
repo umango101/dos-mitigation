@@ -114,6 +114,90 @@ Each attack/mitigation pair listed will be treated as a single parameter value t
 ]
 ```
 
+## Playbooks
+Most experiment automation is handled using Ansible playbooks.  The `play` script provides a simple wrapper around the `ansible-playbook` command that will pass in the `hosts` file as a device inventory (this `hosts` file is created by running `inventory_gen.sh` followed by `inventory_update.sh`).  Example usage:
+
+```
+cd /usr/local/dos-mitigation
+./play ping
+```
+
+This will run `playbooks/ping.yml`.  A brief description of included playbooks is below. Note that most of these will be run automatically via `run.py`, but it may be useful to run them manually for debugging purposes.
+
+### apt_update
+Runs `sudo apt update` on all nodes.
+
+### attacker_config
+Compiles all C programs in `common/attacks` on all attacker nodes
+
+### clear_logs
+Deletes and recreates `/tmp/logs`.  This is done automatically between each experiment by the `experiment` playbook.
+
+### cmd
+A simple template for executing a command on a set of hosts.
+
+### copy_cert
+Fetches the server's SSL certificate and copies it to clients and attackers so they can establish HTTPS connections.
+
+### debug
+Displays detailed information about all nodes, and checks whether Ansible can ping each node.
+
+### depends
+Installs dependencies on all nodes.  This will also run the `quic_setup` playbook.
+
+### ebpf_setup
+Creates a `clsact` `qdisc` on each node, to which an eBPF program can be attached.
+
+### experiment
+The main playbook used to run a set of dual-control experiments (with/without an attack and with/without a mitigation).  Also runs the `setup` playbook before starting experiments. 
+
+### inventory
+Unused, replaced by `inventory_gen.sh` and `inventory_update.sh`.
+
+### key_reset
+Clears known SSH fingerprints for all nodes.  This can be useful after attaching a new materialization, in which new nodes are using the same names as old ones.
+
+### meausre_attack_rate
+Experimental -- hardcoded interface names and IP addresses will likely need to be updated before use.  Designed to measure the rate at which attack traffic is generated.
+
+### ping
+Basic connectivity check.  Ensures that the server is reachable from all other nodes.
+
+### push_attacks
+Copies `common/attacks` to attackers.  Useful when testing new attacks as it's much faster than the `push_common` playbook.  Be sure to run `./play attacker_config` afterwards to recompile any attacks written as C programs.
+
+### push_common
+Copies the `common` directory to all nodes.
+
+### push_mitigations
+Copies `common/mitigations` to all nodes. Useful when testing new mitigations as it's much faster than the `push_common` playbook.
+
+### quic_setup
+Installs nginx with support for HTTP/3 over QUIC on the server, generates an SSL certificate for the server, runs the `copy_cert` playbook to copy that certificate to clients and attackers, installs `curl` with HTTP/3 over QUIC support on clients and attackers, and tests that clients and attackers are able to fetch from the server using both HTTP/2 and HTTP/3.
+
+### reboot
+Reboots all nodes.
+
+### route_config
+Changes default routes for outbound packets (those with destination IP addresses in the public Internet) so they are delivered to the sink node (as specified by the `sink_name` value in the `settings` file), and creates IPTables rules at the sink to drop any such packets upon receipt.  This is necessary to prevent reflection from spoofed-source attacks leaking out and causing harm to the legitimate owners of spoofed addresses.
+
+### route_flush
+Runs `iptables -F` at the sink, reverting some effects of the `route_config` playbook.  This is necessary if the sink needs to reach the outside world in between experiments, for example to install a new dependency.
+
+### route_test
+Ensures that the `route_config` playbook worked by trying to ping 8.8.8.8 (Google's public DNS server) from each device.  Successful if all pings fail.
+
+### server_config
+Restarts the `nginx` HTTP(S) server.
+
+### setup
+An umbrella for various setup operations.  Runs the following playbooks:
+- `network_config`
+- `server_config`
+- `attacker_config`
+- `route_config`
+- `route_test`
+
 ## Common Files
 
 ### Mitigations
