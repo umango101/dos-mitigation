@@ -118,6 +118,12 @@ Each attack/mitigation pair listed will be treated as a single parameter value t
 ]
 ```
 
+Additionally, the `attackers_do_mitigation` parameter can be used to deploy the client portion of a mitigation at attackers as well.  A value of `0` means attackers will NOT perform the mitigation, and a value of `1` means they will, so both options can be tested with:
+
+`'attackers_do_mitigation': [0, 1]`
+
+Note that not all mitigations involve changes to client behavior, so there may not be anything for attackers to do.  For example, SYN Cookies and QUIC Retry are purely server-side.  In these cases, testing both options with `'attackers_do_mitigation': [0, 1]` will result in two separate but identical experiments.
+
 ## Playbooks
 Most experiment automation is handled using Ansible playbooks.  The `play` script provides a simple wrapper around the `ansible-playbook` command that will pass in the `hosts` file as a device inventory (this `hosts` file is created by running `inventory_gen.sh` followed by `inventory_update.sh`).  Example usage:
 
