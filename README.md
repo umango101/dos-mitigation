@@ -141,7 +141,7 @@ Runs `sudo apt update` on all nodes.
 Compiles all C programs in `common/attacks` on all attacker nodes
 
 ### clear_logs
-Deletes and recreates `/tmp/logs`.  This is done automatically between each experiment by the `experiment` playbook.
+Deletes and recreates `/tmp/logs` on the XDC.  This is done automatically between each experiment by the `experiment` playbook.
 
 ### cmd
 A simple template for executing a command on a set of hosts.
