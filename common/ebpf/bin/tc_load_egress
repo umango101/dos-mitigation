@@ -2,7 +2,7 @@
 
 _prog=$1
 if [ -z "$2" ]; then
-    _devs=($(/usr/local/dos_mitigation/common/bin/list_exp_devs))
+    _devs=($(/usr/local/dos-mitigation/common/bin/list_exp_devs))
 else
     _dev=($2)
 fi

