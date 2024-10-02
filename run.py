@@ -43,6 +43,7 @@ if os.path.exists(log_dir):
     print('Exiting')
     sys.exit()
 else:
+  action = "new"
   os.makedirs(log_dir)
 
 param_file = "{}/.parameters.json".format(log_dir)
