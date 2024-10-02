@@ -1,4 +1,4 @@
-MRG_SERVER="grpc.mod.deterlab.net"
+MRG_SERVER="grpc.sphere-testbed.net"
 MRG_USER=user_name
 MRG_PROJECT=project_name
 MRG_EXPERIMENT=experiment_name

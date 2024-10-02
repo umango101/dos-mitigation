@@ -22,7 +22,7 @@ License: MIT
 
 #define DEBUG 1 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
-#define RAND_SRC_ADDR 0 // Toggle source address randomization
+#define RAND_SRC_ADDR 1 // Toggle source address randomization
 #define RAND_SRC_PORT 1 // Toggle source port randomization
 #define TEST 0
 

@@ -78,8 +78,11 @@
   - name: get server IP
     shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
     register: server_ip
+  - name: get local IP
+    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
+    register: local_ip
   - name: launch {{ attack_type }} attack at {{ server_name }}
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }} {{ local_ip.stdout }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -217,8 +220,11 @@
   - name: get server IP
     shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
     register: server_ip
+  - name: get local IP
+    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
+    register: local_ip
   - name: launching {{ mitigated_attack_type }} attack at {{ server_name }}
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }} {{ local_ip.stdout }}
     async: "{{ attack_duration }}"
     poll: 0
     register: attacker_async

@@ -1,0 +1,6 @@
+- name: test
+  hosts: all
+  tasks:
+  - name: run command
+    shell: "apt update"
+    become: yes
