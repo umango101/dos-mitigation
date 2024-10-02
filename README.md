@@ -255,11 +255,32 @@ cd /usr/local/dos-mitigation
 ### Mitigations
 The code for our DoS mitigations is primarily split across the `common/ebpf` and `common/mitigations` directories.  The former contains source code in eBPF-compatible C, while the latter contains shell scripts to simplify the process of compiling that source code and attaching the eBPF programs to network devices.
 
+For automated experiments, mitigations are enabled and disabled using dedicated playbooks in `playbooks/mitigations`.  So if you want to define a new mitigation named "foo", you'll need to create two playbooks: `playbooks/mitigations/foo_enable.yml` and `playbooks/mitigations/foo_disable.yml`.  You can then use `foo` as a mitigation name in the `attack_mitigation_pairs` section of `parameters.json`.  Depending on the specific nature of the mitigation, these two playbooks might call the same file in `common/mitigations` using different parameters, or they may perform entirely different tasks.
+
+A brief description of included mitigations is below:
+
+#### SYN Cookies
+SYN Cookies are a widely-used mitigation against TCP SYN floods.  See [RFC4987](https://datatracker.ietf.org/doc/html/rfc4987) or [https://cr.yp.to/syncookies.html](https://cr.yp.to/syncookies.html) for details.  Implemented by using `sysctl` to write the `net.ipv4.tcp_syncookies` kernel parameter (1 to enable, 0 to disable).
+
 #### SYN PoW
-Adds a small proof-of-work to TCP SYN Packets
+Adds a small proof-of-work to TCP SYN Packets.  This mitigation is unique in that it requires the user to specify the average number of hash iterations per packet (the `k` value).  This is specified by appending it to the mitigation's name in `parameters.json`.  For example, consider a parameters file that includes the following:
+
+```
+"attack_mitigation_pair": [
+    ["syn_flood", "syn_pow_8"],
+    ["syn_flood", "syn_pow_16"],
+]
+```
+
+This will test the SYN PoW mitigation with both k=8 and k=16 against SYN flooding attacks.
+
+Also note that the `syn_pow_verifier` parameter is used to determine which node performs verification (dropping and SYNs without valid proofs).
 
 #### SYN Padding
-Adds a padding to TCP SYN Packets
+Adds a small amount of padding (40 bytes) to TCP SYN Packets.  Unpadded packets will be dropped by the verifier.  This also relies on the `syn_pow_verifier` parameter to determine where verification takes place.
+
+### QUIC Retry
+The Retry mechanism is essentially QUIC's version of SYN Cookies.  Implemented by editing the `nginx` config file  at `/usr/local/nginx/conf/nginx.conf`.
 
 ### Attacks
 These scripts pose a serious danger if not used with care -- they are to be used for research purposes only, in controlled environemnts.  Even then, precautions must be taken to avoid flooding devices outside your control -- if using address-spoofing features, make sure response traffic is dropped rather than delivering it to the rightful address owners.  When operating on DeterLab, `run.py` will call `playbooks\route_config.yml`, which configures devices to route outbound traffic (with public destination IPs) towards a **Sink** device where it is then dropped.  Note that routining this attack backscatter through the network is important for maintaining realism in experimentation, but dropping it before it leaves the testbed is essential.
