@@ -38,3 +38,5 @@ The `revisions` and `materializations` tables contain information related to tho
 
 Each `session` consists of multiple `experiments`, during which each `host` collects some `data`.  Key `results` are then extracted from the raw `data`.  To clarify, the `data` table essentially contains (metric, timestamp, value) tuples, while the `results` table aggregates those into higher-layer metrics like overhead and efficiency, across the full timespan of the experiment.  Raw data is preserved in case it's needed, but most plots should be easier and faster to generate from these higher-level results.
 
+## Erasing Data
+The `drop.ipynb` notebook can be used to erase data from the database.  It *should* be able to drop all data for a single session or a single materialization, but these sometimes cause errors.  A more reliable approach is to run the `drop_all()` cell to erase the entire database, and then re-import any sessions you want to preserve.  Note that you'll first need to set `safety=False` in the "Settings" cell, as an added precuation to avoid unintended data loss.
