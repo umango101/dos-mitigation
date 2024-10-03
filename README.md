@@ -156,7 +156,7 @@ Displays detailed information about all nodes, and checks whether Ansible can pi
 Installs dependencies on all nodes.  This will also run the `quic_setup` playbook.
 
 ### ebpf_setup
-Unused, replaced by `common/bin/ebpf/tc_setup.sh`.  Creates a `clsact` `qdisc` on each node, to which an eBPF program can be attached.
+Unused, replaced by `common/ebpf/bin/tc_setup.sh`.  Creates a `clsact` `qdisc` on each node, to which an eBPF program can be attached.
 
 ### experiment
 The main playbook used to run a set of dual-control experiments (with/without an attack and with/without a mitigation).  Also runs the `setup` playbook before starting experiments. 
