@@ -1,0 +1,6 @@
+- name: setup dns server
+  hosts: auth0
+  tasks:
+    - name: Enable DNS setup
+      shell: /usr/local/dos-mitigation/common/setup/dns_setup.sh
+      become: yes

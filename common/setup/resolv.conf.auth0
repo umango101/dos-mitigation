@@ -1,0 +1,4 @@
+nameserver 127.0.0.1
+nameserver 192.168.252.1
+domain isi.deterlab.net
+search isi.deterlab.net
