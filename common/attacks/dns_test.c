@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Get target (and optionally source) IP address
-	char dst_addr[32] = default_dst_addr;
+	char dst_addr[32] = "10.0.1.2";
 	uint16_t dst_port = default_dst_port;
 
 	// if (argc > 1) {
@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
 	// Initialize headers
 	struct iphdr *iph = (struct iphdr *) datagram;
 	struct udphdr *udph = (struct udphdr *) (datagram + sizeof (struct ip));
-	struct dns_header *dnsh = (struct dns_header *) (datagram + sizeof(struct ip) + sizeof(struct udp));
+	struct dns_header *dnsh = (struct dns_header *) (datagram + sizeof(struct ip) + sizeof(struct udphdr));
 	struct pseudo_header psh;
 
 	// UDP Payload
@@ -289,30 +289,30 @@ int main(int argc, char *argv[]) {
 	dnsh->nother = 0;
 	
 	int n, name_len;
-	uchar *p;
-	const char *s;
+	u_char *p;
+	const char *st;
 	const char *name;
 	enum dns_query_type qtype = DNS_A_RECORD;
 	strcpy(name, "www.google.com");
 	name_len = strlen(name);
-	p = (uchar *)&dnsh->data;
+	p = (u_char *)&dnsh->data;
 
 	do {
-		s = strchr(name, '.');
-		if (!s)
-			s = name + name_len;
+		st = strchr(name, '.');
+		if (!st)
+			st = name + name_len;
 
-		n = s - name;			/* Chunk length */
+		n = st - name;			/* Chunk length */
 		*p++ = n;			/* Copy length  */
 		memcpy(p, name, n);		/* Copy chunk   */
 		p += n;
 
-		if (*s == '.')
+		if (*st == '.')
 			n++;
 
 		name += n;
 		name_len -= n;
-	} while (*s != '\0');
+	} while (*st != '\0');
 
 	*p++ = 0;			/* Mark end of host name */
 	*p++ = 0;			/* Some servers require double null */
@@ -363,3 +363,4 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
+
