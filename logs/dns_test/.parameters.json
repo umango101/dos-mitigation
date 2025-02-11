@@ -1,0 +1,17 @@
+{
+  "client_interval": [0.0],
+  "client_app": ["tcp", "http", "https", "http3"],
+  "file_size": ["1000", "1000000"],
+  "attack_mitigation_pair": [
+    ["dns_test", "syn_cookies"]
+  ],
+  "attackers_do_mitigation": [0],
+  "bottleneck_latency": [-1],
+  "bottleneck_loss": [-1],
+  "bottleneck_capacity": [-1],
+  "attacker_busywait": [0],
+  "attacker_cpu_limit": [100, 10],
+  "n_clients": [1],
+  "n_attackers": [1],
+  "syn_pow_verifier": ["s0"]
+}
