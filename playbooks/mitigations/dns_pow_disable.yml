@@ -1,15 +1,15 @@
-- name: Enable SYN PoW at Server Ingress
-  hosts: syn_pow_verifier
+- name: Disable DNS PoW at Server Ingress
+  hosts: dns0
   tasks:
     - name: setup tc qdisc
       shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
       register: result
       failed_when: result.rc != 0 and "cannot modify" not in result.stderr
       become: yes
-    - name: re-compile and re-attach eBPF program
-      shell: "{{ user_dir }}/common/mitigations/syn_pow_ingress.sh 1 {{ syn_pow_k }}"
+    - name: detach eBPF program
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_ingress"
 
-- name: Enable SYN PoW at Client Egress
+- name: Disable DNS PoW at Client Egress
   hosts: active_clients
   tasks:
     - name: setup tc qdisc
@@ -17,10 +17,10 @@
       register: result
       failed_when: result.rc != 0 and "cannot modify" not in result.stderr
       become: yes
-    - name: re-compile and re-attach eBPF program
-      shell: "{{ user_dir }}/common/mitigations/syn_pow_egress.sh 1 {{ syn_pow_k }}"
+    - name: detach eBPF program
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_egress"
 
-- name: Enable SYN PoW at Attacker Egress
+- name: Disable DNS PoW at Attacker Egress
   hosts: active_attackers
   tasks:
     - name: setup tc qdisc
@@ -29,6 +29,6 @@
       register: result
       failed_when: result.rc != 0 and "cannot modify" not in result.stderr
       become: yes
-    - name: re-compile and re-attach eBPF program
+    - name: detach eBPF program
       when: attackers_do_mitigation == 1
-      shell: "{{ user_dir }}/common/mitigations/syn_pow_egress.sh 1 {{ syn_pow_k }}"
+      shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_egress"

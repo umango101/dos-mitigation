@@ -12,12 +12,12 @@ fi
 for _dev in "${_devs[@]}"; do
   /usr/local/dos-mitigation/common/ebpf/bin/tc_clear $_dev
   if [[ $_toggle -eq 1 ]]; then
-    clang -O2 -target bpf -D POW_ITERS=$_iters -c /usr/local/dos-mitigation/common/ebpf/syn_pow.c -o syn_pow\
+    clang -O2 -target bpf -D POW_ITERS=$_iters -c /usr/local/dos-mitigation/common/ebpf/dns_pow.c -o dns_pow\
       -I /usr/include/bpf\
       -I /usr/include/iproute2\
       -I /usr/include/x86_64-linux-gnu\
       -Wno-int-to-void-pointer-cast
 
-    /usr/local/dos-mitigation/common/ebpf/bin/tc_load syn_pow $_dev
+    /usr/local/dos-mitigation/common/ebpf/bin/tc_load dns_pow $_dev
   fi
 done
