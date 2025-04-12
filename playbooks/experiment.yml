@@ -1,7 +1,7 @@
 # Setup
 - import_playbook: "setup.yml"
 
-- hosts: server, router, sink, active_clients, active_attackers
+- hosts: server, router, sink, active_clients, active_attackers, auth0
   tasks:
     - name: create local log directories
       file:
@@ -51,7 +51,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers
+- hosts: server, router, sink, active_clients, active_attackers, auth0
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -138,7 +138,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers
+- hosts: server, router, sink, active_clients, active_attackers, auth0
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -193,7 +193,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers
+- hosts: server, router, sink, active_clients, active_attackers, auth0
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -280,7 +280,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers
+- hosts: server, router, sink, active_clients, active_attackers, auth0
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -301,7 +301,7 @@
 
 - import_playbook: "mitigations/{{ mitigation }}_disable.yml"
 
-- hosts: server, router, sink, active_clients, active_attackers
+- hosts: server, router, sink, active_clients, active_attackers, auth0
   gather_facts: yes
   vars:
     - log_dir: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"

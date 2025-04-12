@@ -22,7 +22,7 @@ License: MIT
 #define DEBUG 1 // Set verbosity
 #define DELAY 0 // Set delay between packets in seconds
 #define RAND_SRC_ADDR 0 // Toggle source address randomization
-#define RAND_SRC_PORT 0 // Toggle source port randomization
+#define RAND_SRC_PORT 1 // Toggle source port randomization
 
 /*
 	Maximum total packet size.  This could be larger, but packets over 1500 bytes
@@ -39,13 +39,13 @@ enum dns_query_type {
 const uint32_t MAX_PACKET_SIZE = 1500;
 
 // Default Source IP, in case we aren't randomizing
-const char default_src_addr[32] = "10.0.5.1";
+const char default_src_addr[32] = "10.0.4.1";
 
 // Placeholder, destination IP must be specified with argv[1]
 const char default_dst_addr[32] = "10.0.1.2";
 
 // Default Source Port, in case we aren't randomizing
-const uint16_t default_src_port = 53;
+const uint16_t default_src_port = 2000;
 
 // Destination Port, unless otherwise specified with argv[2]
 const uint16_t default_dst_port = 53; // 53 is DNS
@@ -65,7 +65,7 @@ struct dns_header {
 	uint16_t	nanswers;	/* Answers */
 	uint16_t	nauth;		/* Authority PRs */
 	uint16_t	nother;		/* Other PRs */
-	unsigned char	data[1];	/* Data, variable length */
+	unsigned char*	data[15];	/* Data, variable length */
 } __attribute__((packed));
 
 static void update_ip_csum(struct iphdr* iph, __be32 old_saddr) {
@@ -165,6 +165,7 @@ unsigned short csum(unsigned short *ptr,int nbytes) {
 
 int main(int argc, char *argv[]) {
 	// Create a raw socket
+	printf("in main without installing dependencies\n");
 	int s = socket (PF_INET, SOCK_RAW, IPPROTO_UDP);
 
 	if(s == -1) {
@@ -172,6 +173,7 @@ int main(int argc, char *argv[]) {
 		perror("Failed to create socket, do you have root priviliges?");
 		exit(1);
 	}
+	printf("created socket\n");
 
 	// Get target (and optionally source) IP address
 	char dst_addr[32] = "10.0.1.2";
@@ -220,6 +222,7 @@ int main(int argc, char *argv[]) {
 
 	// Zero out the packet buffer
 	memset (datagram, 0, MAX_PACKET_SIZE);
+	printf("set datagram to 0\n");
 
 	// Initialize headers
 	struct iphdr *iph = (struct iphdr *) datagram;
@@ -227,21 +230,25 @@ int main(int argc, char *argv[]) {
 	struct dns_header *dnsh = (struct dns_header *) (datagram + sizeof(struct ip) + sizeof(struct udphdr));
 	struct pseudo_header psh;
 
+	printf("initialized iph, udph, dnsh, psh\n");
+
 	// UDP Payload
 	data = datagram + sizeof(struct iphdr) + sizeof(struct udphdr) + sizeof(struct dns_header);
 	// strcpy(data, "Hello, world!");
+	printf("set data equal to end of dns_header\n");
 
 	// Address resolution
 	struct sockaddr_in sin;
 	sin.sin_family = AF_INET;
 	sin.sin_port = htons(dst_port);
 	sin.sin_addr.s_addr = inet_addr(dst_addr);
+	printf("set up socket\n");
 
 	// IP Header
 	iph->ihl = 5;
 	iph->version = 4;
 	iph->tos = 0;
-	iph->tot_len = sizeof (struct iphdr) + sizeof (struct udphdr) + sizeof (struct dns_header) + strlen(data);
+	iph->tot_len = sizeof (struct iphdr) + sizeof (struct udphdr) + sizeof (struct dns_header);
 	iph->id = htonl(0);	//ID of this packet, can be any value
 	iph->frag_off = 0;
 	iph->ttl = 255;
@@ -249,30 +256,34 @@ int main(int argc, char *argv[]) {
 	iph->check = 0;		//Set to 0 before calculating checksum
 	iph->saddr = inet_addr(default_src_addr);
 	iph->daddr = sin.sin_addr.s_addr;
+	printf("set iph fields\n");
 
 	// IP checksum
 	iph->check = csum ((unsigned short *) datagram, iph->tot_len);
+	printf("calc ip checksum\n");
 
 	// UDP Header
 	udph->source = htons(default_src_port);
 	udph->dest = sin.sin_port;
-	udph->len = htons(sizeof(struct udphdr) + sizeof(struct dns_header) + strlen(data));
+	udph->len = htons(sizeof(struct udphdr) + sizeof(struct dns_header));
 	udph->check = 0;
+	printf("set udph fields\n");
 
 	// UDP checksum
 	psh.source_address = inet_addr(default_src_addr);
 	psh.dest_address = sin.sin_addr.s_addr;
 	psh.placeholder = 0;
 	psh.protocol = IPPROTO_UDP;
-	psh.udp_length = htons(sizeof(struct udphdr) + sizeof(struct dns_header) + strlen(data));
+	psh.udp_length = htons(sizeof(struct udphdr) + sizeof(struct dns_header));
 
-	int psize = sizeof(struct pseudo_header) + sizeof(struct udphdr) + sizeof(struct dns_header) + strlen(data);
+	int psize = sizeof(struct pseudo_header) + sizeof(struct udphdr) + sizeof(struct dns_header);
 	pseudogram = malloc(psize);
 
 	memcpy(pseudogram, (char*) &psh, sizeof (struct pseudo_header));
-	memcpy(pseudogram + sizeof(struct pseudo_header), udph, sizeof(struct udphdr) + sizeof(struct dns_header) + strlen(data));
+	memcpy(pseudogram + sizeof(struct pseudo_header), udph, sizeof(struct udphdr) + sizeof(struct dns_header));
 
 	udph->check = csum((unsigned short*) pseudogram, psize);
+	printf("calc udp checksum\n");
 
 	//IP_HDRINCL to tell the kernel that headers are included in the packet
 	int option_value = 1;
@@ -287,45 +298,49 @@ int main(int argc, char *argv[]) {
 	dnsh->nanswers = 0;
 	dnsh->nauth = 0;
 	dnsh->nother = 0;
-	
-	int n, name_len;
-	u_char *p;
-	const char *st;
-	const char *name;
-	enum dns_query_type qtype = DNS_A_RECORD;
-	strcpy(name, "www.google.com");
-	name_len = strlen(name);
-	p = (u_char *)&dnsh->data;
+	printf("set dnsh fields\n");
 
-	do {
-		st = strchr(name, '.');
-		if (!st)
-			st = name + name_len;
+	// int n, name_len;
+	// u_char *p;
+	// const char *st;
+	// const char *name;
+	// enum dns_query_type qtype = DNS_A_RECORD;
+	// strcpy(name, "www.google.com");
+	// name_len = strlen(name);
+	// p = (u_char *)&dnsh->data;
 
-		n = st - name;			/* Chunk length */
-		*p++ = n;			/* Copy length  */
-		memcpy(p, name, n);		/* Copy chunk   */
-		p += n;
+	// do {
+		// st = strchr(name, '.');
+		// if (!st)
+			// st = name + name_len;
 
-		if (*st == '.')
-			n++;
+		// n = st - name;			/* Chunk length */
+		// *p++ = n;			/* Copy length  */
+		// memcpy(p, name, n);		/* Copy chunk   */
+		// p += n;
 
-		name += n;
-		name_len -= n;
-	} while (*st != '\0');
+		// if (*st == '.')
+			// n++;
 
-	*p++ = 0;			/* Mark end of host name */
-	*p++ = 0;			/* Some servers require double null */
-	*p++ = (unsigned char) qtype;	/* Query Type */
+		// name += n;
+		// name_len -= n;
+	// } while (*st != '\0');
+	strcpy(dnsh->data, "www.google.com");
+	printf("set dns name\n");
 
-	*p++ = 0;
-	*p++ = 1;				/* Class: inet, 0x0001 */
+	// *p++ = 0;			/* Mark end of host name */
+	// *p++ = 0;			/* Some servers require double null */
+	// *p++ = (unsigned char) qtype;	/* Query Type */
+
+	// *p++ = 0;
+	// *p++ = 1;				/* Class: inet, 0x0001 */
 
 	__be32 old_saddr;
 	__be32 new_saddr;
 
 	// Generate packets forever, the caller must terminate this program manually
 	while(1) {
+		printf("in while loop\n");
 		#if RAND_SRC_ADDR || RAND_SRC_PORT
 			#if RAND_SRC_ADDR
 			// Generate a new random source IP, excluding certain prefixes
@@ -335,26 +350,30 @@ int main(int argc, char *argv[]) {
 			#if RAND_SRC_PORT
 				udph->source = random_port();
 			#endif
+			printf("set source addr and port\n");
 
 			iph->check = 0;
 			iph->saddr = new_saddr;
 			iph->check = csum ((unsigned short *) datagram, iph->tot_len);
+			printf("added ip checksum\n");
 
 			udph->check = 0;
 			psh.source_address = new_saddr;
 			memcpy(pseudogram , (char*) &psh , sizeof (struct pseudo_header));
-			memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr) + sizeof(struct dns_header) + strlen(data));
+			printf("copied psuedoheader into psuedogram\n");
+			memcpy(pseudogram + sizeof(struct pseudo_header) , udph , sizeof(struct udphdr));
+			printf("copied udph into psuedogram\n");
 			udph->check = csum( (unsigned short*) pseudogram , psize);
+			printf("added udph checksum\n");
 		#endif
 
 		//Send the packet
 		if (sendto (s, datagram, iph->tot_len ,	0, (struct sockaddr *) &sin, sizeof (sin)) < 0) {
+			printf("in if statement\n");
 			perror("Error sending packet");
 		}
 
-		#if DEBUG > 1
-			printf("Sent packet from %s:%u to %s:%u\n", iph->saddr, udph->source, iph->daddr, udph->dest);
-		#endif
+		printf("Sent packet from %s:%u to %s:%u\n", iph->saddr, udph->source, iph->daddr, udph->dest);
 
 		#if DELAY
 			sleep(DELAY);
