@@ -114,7 +114,7 @@ int main() {
     struct udphdr *udph = (struct udphdr *)(datagram + sizeof(struct iphdr));
     struct dns_header *dnsh = (struct dns_header *)(datagram + sizeof(struct iphdr) + sizeof(struct udphdr));
     char *dns_query = (char *)(datagram + sizeof(struct iphdr) + sizeof(struct udphdr) + sizeof(struct dns_header));
-
+    struct pseudo_header psh;
     int query_len;
     encode_dns_query(dns_query, "www.google.com", &query_len);
 
@@ -168,7 +168,7 @@ int main() {
         } else {
             char src_buf[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-            printf("Sent packet from %s:%d\n", src_buf, src_port);
+            printf("Sent packet from %s:%d\n", src_buf, random_port());
         }
 
     }
