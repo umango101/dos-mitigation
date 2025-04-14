@@ -11,5 +11,6 @@ $TTL   604800
                              1w )       ; Negative Cache TTL
 ;
 @      IN       NS      ns.google.com.
-ns     10s      IN      A       10.1.2.3
-www    10s      IN      A       10.1.2.155
+ns     IN       A       10.1.2.3
+www    IN       A       10.1.2.155
+www    IN       TXT     "This is a very long TXT record meant to simulate a large TXT record used in DNS amplification attacks."
