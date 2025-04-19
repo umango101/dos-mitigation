@@ -155,6 +155,12 @@ int main() {
     udph->len = htons(udp_len);
     udph->check = 0;
 
+    psh.src = iph->saddr;
+    psh.dst = iph->daddr;
+    psh.placeholder = 0;
+    psh.protocol = IPPROTO_UDP;
+    psh.udp_length = htons(udp_len);
+
     int psize = sizeof(struct pseudo_header) + udp_len;
     char *pseudogram = malloc(psize);
     memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
