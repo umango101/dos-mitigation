@@ -84,7 +84,6 @@ struct message_digest {
 	unsigned short sport;
 	unsigned short dport;
 	unsigned short tid;
-	unsigned char data[1];
 };
 
 struct dns_header {
@@ -94,7 +93,6 @@ struct dns_header {
         uint16_t        nanswers;       /* Answers */
         uint16_t        nauth;          /* Authority PRs */
         uint16_t        nother;         /* Other PRs */
-        unsigned char   data[1];        /* Data, variable length */
 } __attribute__((packed));
 
 //static __inline bool is_tcp(struct ethhdr *ethh, struct iphdr *iph) {
@@ -156,19 +154,18 @@ static __inline unsigned long dns_hash(struct message_digest* digest) {
 
 static __inline bool valid_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
 	struct message_digest digest;
-	digest.saddr = iph->tid;
-	digest.daddr = iph->daddr;
-	digest.sport = tcph->source;
-	digest.dport = tcph->dest;
-	digest.tid = dnsh->tid;
-	digest.data = dnsh->data;
+        digest.saddr = iph->saddr;
+        digest.daddr = iph->daddr;
+        digest.sport = tcph->source;
+        digest.dport = tcph->dest;
+        digest.tid = dnsh->tid;
 
 	unsigned long hash = dns_hash(&digest);
 	bool valid = (hash >= (unsigned long) POW_THRESHOLD);
 	return valid;
 }
 
-static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph) {
+static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
 	unsigned long hash = 0;
 	unsigned long best_hash = 0;
 	unsigned short hash_iters = 0;
@@ -182,7 +179,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 	digest.daddr = iph->daddr;
 	digest.sport = udph->source;
 	digest.dport = udph->dest;
-	digest.data = dnsh->data;
+	digest.tid = dnsh->tid;
 
 	if (POW_THRESHOLD > 0) {
 		#pragma unroll

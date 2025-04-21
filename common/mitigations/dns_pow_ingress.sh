@@ -21,7 +21,7 @@ for _dev in "${_devs[@]}"; do
       -I /usr/include/iproute2\
       -I /usr/include/x86_64-linux-gnu\
       -Wno-int-to-void-pointer-cast
-      
+
     /usr/local/dos-mitigation/common/ebpf/bin/tc_load_ingress dns_pow $_dev
   fi
 done

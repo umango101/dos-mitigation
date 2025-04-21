@@ -1,5 +1,5 @@
-- name: Disable DNS PoW at Server Ingress
-  hosts: dns0
+- name: Disable DNS PoW at Auth Ingress
+  hosts: auth0
   tasks:
     - name: setup tc qdisc
       shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
@@ -9,7 +9,7 @@
     - name: detach eBPF program
       shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_ingress"
 
-- name: Disable DNS PoW at Client Egress
+- name: Disable SYN PoW at Client Egress
   hosts: active_clients
   tasks:
     - name: setup tc qdisc
@@ -20,7 +20,7 @@
     - name: detach eBPF program
       shell: "{{ user_dir }}/common/ebpf/bin/tc_clear_egress"
 
-- name: Disable DNS PoW at Attacker Egress
+- name: Disable SYN PoW at Attacker Egress
   hosts: active_attackers
   tasks:
     - name: setup tc qdisc
