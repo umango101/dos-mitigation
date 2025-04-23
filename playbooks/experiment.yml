@@ -9,6 +9,11 @@
         state: directory
       delegate_to: control0
       become: yes
+    - name: create local log directories
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+        state: directory
+      delegate_to: localhost
 - hosts: control0
   tasks:
     - name: copy settings
@@ -16,6 +21,12 @@
         src: "{{ user_dir }}/.settings"
         dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/.settings"
       become: yes
+- hosts: localhost
+  tasks:
+    - name: copy settings
+      copy:
+        src: "{{ user_dir }}/.settings"
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/.settings"
 
 # Unmitigated Baseline
 - import_playbook: "clear_logs.yml"
@@ -65,13 +76,52 @@
       dest: /tmp/logs.zip
       format: zip
     ignore_errors: yes
-  - name: send logs to control0
-    copy:
+  - name: send logs to localhost
+    fetch:
       src: /tmp/logs.zip
       dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UB/logs.zip"
-      remote_src: yes
-    delegate_to: control0
+      flat: yes
     ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: create destination directory on control0
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB"
+        state: directory
+        mode: '0755'
+      loop: "{{ nodes }}"
+      delegate_to: control0
+      become: yes
+      ignore_errors: yes
+
+- name: Copy file from localhost to remote machine
+  hosts: control0
+  become: yes  # Optional: if you need sudo privileges
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: Copy file to remote machine
+      copy:
+        src: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB/logs.zip"  # Local path to the file on your machine
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB/logs.zip"  # Remote destination path
+        mode: '0644'  # Optional: set permissions
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: delete logs from localhost
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB/logs.zip"
+        state: absent
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
 
 # Unmitigated Attack
 - import_playbook: "clear_logs.yml"
@@ -153,13 +203,52 @@
       dest: /tmp/logs.zip
       format: zip
     ignore_errors: yes
-  - name: send logs to control0
-    copy: 
+  - name: send logs to localhost
+    fetch:
       src: /tmp/logs.zip
       dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UA/logs.zip"
-      remote_src: yes
-    delegate_to: control0
+      flat: yes
     ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: create destination directory on control0
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA"
+        state: directory
+        mode: '0755'
+      loop: "{{ nodes }}"
+      delegate_to: control0
+      become: yes
+      ignore_errors: yes
+
+- name: Copy file from localhost to remote machine
+  hosts: control0
+  become: yes  # Optional: if you need sudo privileges
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: Copy file to remote machine
+      copy:
+        src: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"  # Local path to the file on your machine
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"  # Remote destination path
+        mode: '0644'  # Optional: set permissions
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: delete logs from localhost
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"
+        state: absent
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
 
 # Mitigated Baseline
 - import_playbook: "clear_logs.yml"
@@ -209,13 +298,52 @@
       dest: /tmp/logs.zip
       format: zip
     ignore_errors: yes
-  - name: send logs to control0
-    copy:
+  - name: send logs to localhost
+    fetch:
       src: /tmp/logs.zip
-      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/MB/"
-      remote_src: yes
-    delegate_to: control0
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/MB/logs.zip"
+      flat: yes
     ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: create destination directory on control0
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MB"
+        state: directory
+        mode: '0755'
+      loop: "{{ nodes }}"
+      delegate_to: control0
+      become: yes
+      ignore_errors: yes
+
+- name: Copy file from localhost to remote machine
+  hosts: control0
+  become: yes  # Optional: if you need sudo privileges
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: Copy file to remote machine
+      copy:
+        src: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MB/logs.zip"  # Local path to the file on your machine
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MB/logs.zip"  # Remote destination path
+        mode: '0644'  # Optional: set permissions
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: delete logs from localhost
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MB/logs.zip"
+        state: absent
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
 
 # Mitigated Attack
 - import_playbook: "clear_logs.yml"
@@ -297,13 +425,52 @@
       dest: /tmp/logs.zip
       format: zip
     ignore_errors: yes
-  - name: collect logs
-    copy: 
+  - name: send logs to localhost
+    fetch:
       src: /tmp/logs.zip
-      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/MA/"
-      remote_src: yes
-    delegate_to: control0
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/MA/logs.zip"
+      flat: yes
     ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: create destination directory on control0
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MA"
+        state: directory
+        mode: '0755'
+      loop: "{{ nodes }}"
+      delegate_to: control0
+      become: yes
+      ignore_errors: yes
+
+- name: Copy file from localhost to remote machine
+  hosts: control0
+  become: yes  # Optional: if you need sudo privileges
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: Copy file to remote machine
+      copy:
+        src: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MA/logs.zip"  # Local path to the file on your machine
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MA/logs.zip"  # Remote destination path
+        mode: '0644'  # Optional: set permissions
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: delete logs from localhost
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/MA/logs.zip"
+        state: absent
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+
 
 - import_playbook: "mitigations/{{ mitigation }}_disable.yml"
 
@@ -333,8 +500,8 @@
         - "UA"
         - "MB"
         - "MA"
-      become: yes
       delegate_to: control0
+      ignore_errors: yes
       become: yes
     # - name: copy fact files
     #   copy:
