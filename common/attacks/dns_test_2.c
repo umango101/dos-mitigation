@@ -12,7 +12,7 @@
 #define MAX_PACKET_SIZE 1500
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.4.1"
-#define DEFAULT_DST_IP "10.0.1.2"
+#define DEFAULT_DST_IP "10.0.1.1"
 
 struct pseudo_header {
     uint32_t src;
@@ -89,7 +89,7 @@ uint16_t random_port(void) {
     return (rand() % (65535 - 1024)) + 1024;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     srand(time(NULL));
 
     const char *src_ip_str = DEFAULT_SRC_IP;
@@ -174,7 +174,7 @@ int main() {
         } else {
             char src_buf[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-            printf("Sent packet from %s:%d\n", src_buf, random_port());
+            //printf("Sent packet from %s:%d\n", src_buf, random_port());
         }
 
     }

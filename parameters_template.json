@@ -3,17 +3,9 @@
   "client_app": ["tcp", "http", "https", "http3"],
   "file_size": ["1000", "1000000"],
   "attack_mitigation_pair": [
-    ["https_curl", "syn_cookies"],
-    ["syn_flood", "syn_cookies"],
-    ["syn_flood_spoofed", "syn_cookies"],
-    ["https_curl", "syn_pow_16"],
-    ["syn_flood", "syn_pow_16"],
-    ["syn_flood_spoofed", "syn_pow_16"],
-    ["quic_prebuilt", "quic_retry"],
-    ["quic_prebuilt_spoofed", "quic_retry"],
-    ["quic_curl", "quic_retry"]
+    ["dns_test_2", "syn_cookies"]
   ],
-  "attackers_do_mitigation": [0, 1],
+  "attackers_do_mitigation": [0],
   "bottleneck_latency": [-1],
   "bottleneck_loss": [-1],
   "bottleneck_capacity": [-1],

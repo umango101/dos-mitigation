@@ -1,0 +1,220 @@
+# Setup
+- import_playbook: "setup.yml"
+
+- hosts: server, router, sink, active_clients, active_attackers, auth0
+  tasks:
+    - name: create local log directories
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+        state: directory
+      delegate_to: control0
+      become: yes
+    - name: create local log directories
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+        state: directory
+      delegate_to: localhost
+- hosts: control0
+  tasks:
+    - name: copy settings
+      copy:
+        src: "{{ user_dir }}/.settings"
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/.settings"
+      become: yes
+- hosts: localhost
+  tasks:
+    - name: copy settings
+      copy:
+        src: "{{ user_dir }}/.settings"
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/.settings"
+# Unmitigated Attack
+- import_playbook: "clear_logs.yml"
+
+- hosts: active_attackers
+  gather_facts: no
+  tasks:
+  - name: get server IP
+    shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
+    register: server_ip
+  - name: get local IP
+    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
+    register: local_ip
+  - name: launch {{ attack_type }} attack at {{ server_name }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ server_ip.stdout }} {{ attacker_busywait }} {{ local_ip.stdout }}
+    async: "{{ attack_duration }}"
+    poll: 0
+    become: yes
+    register: attacker_async
+
+- hosts: active_clients
+  gather_facts: no
+  tasks:
+  - name: start {{ client_app }} clients
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }}
+    async: "{{ client_duration }}"
+    poll: 0
+    register: client_async
+  - name: wait for clients
+    pause:
+      seconds: "{{ client_duration }}"
+  - name: check on clients
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+  - name: async cleanup
+    async_status:
+      jid: "{{ client_async.ansible_job_id }}"
+      mode: cleanup
+
+- hosts: active_attackers
+  tasks:
+  - name: check on attackers
+    async_status:
+      jid: "{{ attacker_async.ansible_job_id }}"
+    register: result
+    until: result.finished
+    failed_when: result.rc not in [0, 124]
+    become: yes
+  - name: async cleanup
+    async_status:
+      jid: "{{ attacker_async.ansible_job_id }}"
+      mode: cleanup
+    become: yes
+  - name: wait for attack traffic to flush out
+    pause:
+      seconds: "{{ post_attack_delay }}"
+
+- hosts: server
+  gather_facts: no
+  tasks:
+  - name: restart nginx
+    systemd:
+      name: nginx
+      state: restarted
+      daemon_reload: yes
+    become: yes
+
+- hosts: server, router, sink, active_clients, active_attackers, auth0
+  gather_facts: no
+  tasks:
+  - name: wait for logging to finish
+    pause:
+      seconds: "{{ cleanup_delay }}"
+  - name: List contents of /tmp/logs
+    shell: ls -lh /tmp/logs
+    register: logs_dir_listing
+    ignore_errors: yes
+  - debug:
+      var: logs_dir_listing.stdout_lines
+  - name: compress logs
+    archive:
+      path: /tmp/logs
+      dest: /tmp/logs.zip
+      format: zip
+    ignore_errors: yes
+  - name: ensure logs.zip exists
+    stat:
+      path: /tmp/logs.zip
+    register: logzip
+  - name: fail if logs.zip does not exist
+    fail:
+      msg: "logs.zip not found"
+    when: not logzip.stat.exists
+  - name: ensure local log directory exists
+    delegate_to: localhost
+    file:
+      path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA"
+      state: directory
+      mode: '0755'
+      recurse: yes
+    loop: "{{ ansible_play_hosts }}"
+  - name: send logs to localhost
+    fetch:
+      src: /tmp/logs.zip
+      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UA/"
+        #      flat: yes
+  - name: Check if logs.zip was fetched to localhost
+    stat:
+      path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UA/logs.zip"
+    register: fetched_logs_zip_stat
+  - debug:
+      msg: "Fetched for {{ inventory_hostname }} - logs.zip exists locally? {{ fetched_logs_zip_stat.stat.exists }}"
+  
+- hosts: localhost
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: create destination directory on control0
+      file:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA"
+        state: directory
+        mode: '0755'
+      loop: "{{ nodes }}"
+      delegate_to: control0
+      become: yes
+      ignore_errors: yes
+
+- name: Copy file from localhost to remote machine
+  hosts: control0
+  become: yes  # Optional: if you need sudo privileges
+  vars:
+    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
+  tasks:
+    - name: Double check file exists before copy to control0
+      stat:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"
+      register: copy_check
+      delegate_to: localhost
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+    - debug:
+        msg: "Ready to copy to control0 for {{ item }}? {{ copy_check.stat.exists }}"
+    - name: Copy file to remote machine
+      copy:
+        src: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"  # Local path to the file on your machine
+        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"  # Remote destination path
+        mode: '0644'  # Optional: set permissions
+      loop: "{{ nodes }}"
+      ignore_errors: yes
+    - name: Confirm logs.zip exists on control0
+      stat:
+        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UA/logs.zip"
+      register: control0_logs_zip
+      delegate_to: control0
+      become: yes
+    - debug:
+        msg: "Copied on control0 for {{ item }}? {{ control0_logs_zip.stat.exists }}"
+
+- import_playbook: "mitigations/{{ mitigation }}_disable.yml"
+
+- hosts: server, router, sink, active_clients, active_attackers, auth0
+  gather_facts: yes
+  vars:
+    - log_dir: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+  tasks:
+    - name: decompress logs
+      unarchive:
+        src: "{{ log_dir }}/{{ item }}/logs.zip"
+        dest: "{{ log_dir }}/{{ item }}/"
+      loop:
+        - "UB"
+        - "UA"
+        - "MB"
+        - "MA"
+      delegate_to: control0
+      ignore_errors: yes
+      become: yes
+    - name: delete zip files
+      file:
+        path: "{{ log_dir }}/{{ item }}/logs.zip"
+        state: absent
+      loop:
+        - "UB"
+        - "UA"
+        - "MB"
+        - "MA"
+      delegate_to: control0
+      ignore_errors: yes
+      become: yes

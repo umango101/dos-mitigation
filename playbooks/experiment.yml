@@ -64,7 +64,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0
+- hosts: server, sink, active_clients, active_attackers, auth0
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -76,52 +76,24 @@
       dest: /tmp/logs.zip
       format: zip
     ignore_errors: yes
-  - name: send logs to localhost
-    fetch:
-      src: /tmp/logs.zip
-      dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}/UB/logs.zip"
-      flat: yes
-    ignore_errors: yes
 
 - hosts: localhost
-  vars:
-    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
-  tasks:
-    - name: create destination directory on control0
-      file:
-        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB"
-        state: directory
-        mode: '0755'
-      loop: "{{ nodes }}"
-      delegate_to: control0
-      become: yes
-      ignore_errors: yes
-
-- name: Copy file from localhost to remote machine
-  hosts: control0
-  become: yes  # Optional: if you need sudo privileges
-  vars:
-    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
-  tasks:
-    - name: Copy file to remote machine
-      copy:
-        src: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB/logs.zip"  # Local path to the file on your machine
-        dest: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB/logs.zip"  # Remote destination path
-        mode: '0644'  # Optional: set permissions
-      loop: "{{ nodes }}"
-      ignore_errors: yes
-
-- hosts: localhost
-  vars:
-    nodes: [c0, sink0, s0, a0, auth0]  # replace with your actual inventory hostnames
-  tasks:
-    - name: delete logs from localhost
-      file:
-        path: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ item }}/UB/logs.zip"
-        state: absent
-      loop: "{{ nodes }}"
-      ignore_errors: yes
-
+  vars: 
+    base_dest_dir: "/usr/local/dos-mitigation/logs/{{ session }}/{{ timestamp }}"
+    subfolder: "UB"
+    script_path: "/usr/local/dos-mitigation/playbooks/copy_logs.sh"
+  tasks: 
+    - name: Ensure script is executable
+      file: 
+        path: "{{ script_path }}"
+        mode: "0755"
+        state: file
+    - name: Run copy script
+      command: "{{ script_path }} {{ base_dest_dir }} {{ subfolder }}"
+      register: copy_output
+    - name: Show script output
+      debug: 
+        var: copy_output.stdout_lines 
 
 # Unmitigated Attack
 - import_playbook: "clear_logs.yml"
