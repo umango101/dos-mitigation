@@ -5,6 +5,7 @@
     file:
       path: /tmp/logs
       state: absent
+    become: yes
   - name: recreate log directory
     file:
       path: /tmp/logs

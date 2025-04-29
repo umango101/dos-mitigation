@@ -9,8 +9,10 @@ request_interval=$2
 query_domain="www.google.com"
 
 log_dir=/tmp/logs/
+# mkdir -p $log_dir
+# log_file="$log_dir/dns.csv"
 mkdir -p $log_dir
-log_file="$log_dir/dns.csv"
+log_file="$log_dir/http.csv"
 
 # url="http://$server_ip:$server_port/junk/foo.bin"
 
