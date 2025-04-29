@@ -2,8 +2,8 @@
 
 # Simple DNS Client
 
-server_name=$1
-server_ip=$(/usr/local/dos-mitigation/common/bin/hostname_to_ip $server_name)
+server_name=auth0
+server_ip="10.0.1.1"
 server_port=53
 request_interval=$2
 query_domain="www.google.com"
@@ -22,6 +22,11 @@ while true; do
     ok=$?
     end="$(date +%s%N)"
     echo "$ok,$start,$end" >>$log_file
+#    if dig +short @$server_ip "$query_domain" > /dev/null 2>&1; then
+#      echo "$query_domain resolved successfully."
+#    else
+#      echo "Failed to resolve $query_domain."
+#    fi
     sleep $request_interval
 done
 

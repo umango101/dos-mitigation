@@ -45,7 +45,7 @@
 // const unsigned long POW_THRESHOLD  = 3758096384; // k=8
 // const unsigned long POW_THRESHOLD  = 4026531840; // k=16
 // const unsigned long POW_THRESHOLD  = 4160749568; // k=32
-// const unsigned long POW_THRESHOLD  = 4227858432; // k=64
+ const unsigned long POW_THRESHOLD  = 4227858432; // k=64
 
 // theta = (2^32) * (k - 1) / k)
 // #if POW_ITERS > 0
@@ -156,8 +156,8 @@ static __inline bool valid_dns_pow(struct iphdr* iph, struct udphdr* udph, struc
 	struct message_digest digest;
         digest.saddr = iph->saddr;
         digest.daddr = iph->daddr;
-        digest.sport = tcph->source;
-        digest.dport = tcph->dest;
+        digest.sport = udph->source;
+        digest.dport = udph->dest;
         digest.tid = dnsh->tid;
 
 	unsigned long hash = dns_hash(&digest);

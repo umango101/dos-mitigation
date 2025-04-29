@@ -103,5 +103,5 @@ for p in permutations:
 
   mitigation = p['mitigation']
   subprocess.run(["{}/inventory_update.sh".format(code_dir)])
-  subprocess.run(["{}/play".format(code_dir), "experiment_4", "timestamp={} mitigation={}".format(timestamp, mitigation)])
+  subprocess.run(["{}/play".format(code_dir), "experiment_5", "timestamp={} mitigation={}".format(timestamp, mitigation)])
   subprocess.run(["mv", tmp_log_path, "{}/{}/.ansible.log".format(log_dir, timestamp)])
