@@ -12,7 +12,7 @@ log_dir=/tmp/logs/
 # mkdir -p $log_dir
 # log_file="$log_dir/dns.csv"
 mkdir -p $log_dir
-log_file="$log_dir/http.csv"
+log_file="$log_dir/dns.csv"
 
 # url="http://$server_ip:$server_port/junk/foo.bin"
 

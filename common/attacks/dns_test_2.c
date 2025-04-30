@@ -11,7 +11,7 @@
 
 #define MAX_PACKET_SIZE 1500
 #define DNS_PORT 53
-#define DEFAULT_SRC_IP "10.0.2.1"
+#define DEFAULT_SRC_IP "10.0.3.1"
 #define DEFAULT_DST_IP "10.0.1.1"
 
 struct pseudo_header {
@@ -92,15 +92,23 @@ uint16_t random_port(void) {
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    char *src_ip_str = DEFAULT_SRC_IP;
-    char *dst_ip_str = DEFAULT_DST_IP;
-    
-    if (argc > 1) {
-        strcpy(dst_ip_str, argv[1]);
-    } else {
-        printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
+    if (argc <= 1) {
+	printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
         exit(1);
     }
+    
+    char *src_ip_str = DEFAULT_SRC_IP;
+    char *dst_ip_str = argv[1];
+    
+    printf("set ips\n");
+
+    // if (argc > 1) {
+    //     strcpy(dst_ip_str, argv[0]);
+    // } else {
+    //     printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
+    //     exit(1);
+    // }
+    printf("set auth ips\n");
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
@@ -181,7 +189,7 @@ int main(int argc, char *argv[]) {
         } else {
             char src_buf[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-            //printf("Sent packet from %s:%d\n", src_buf, random_port());
+            // printf("Sent packet from %s:%d\n", src_buf, random_port());
         }
 
     }
