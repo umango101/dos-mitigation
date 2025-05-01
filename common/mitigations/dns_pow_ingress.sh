@@ -1,9 +1,10 @@
 #!/bin/bash
+set -euo pipefail
 
 _toggle=$1
 _iters=$2
 
-if [ -z "$3" ]; then
+if [ -z "${3:-}" ]; then
     _devs=($(/usr/local/dos-mitigation/common/bin/list_exp_devs))
 else
     _devs=($3)
@@ -16,11 +17,23 @@ for _dev in "${_devs[@]}"; do
     pow_threshold=$(echo "(($_iters - 1) / $_iters) * 4294967296.0" | bc -l)
     # strip decimals
     pow_threshold=${pow_threshold%.*}
+
+    if [ -z "$pow_threshold" ]; then
+        pow_threshold=0
+    fi
+
     clang -O2 -target bpf -D POW_THRESHOLD=$pow_threshold -c /usr/local/dos-mitigation/common/ebpf/dns_pow.c -o dns_pow\
       -I /usr/include/bpf\
       -I /usr/include/iproute2\
       -I /usr/include/x86_64-linux-gnu\
       -Wno-int-to-void-pointer-cast
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to compile dns_pow.c with POW_THRESHOLD=$pow_threshold"
+        exit 1
+    fi
+
+    echo "pow_threshold: $pow_threshold"
 
     /usr/local/dos-mitigation/common/ebpf/bin/tc_load_ingress dns_pow $_dev
   fi
