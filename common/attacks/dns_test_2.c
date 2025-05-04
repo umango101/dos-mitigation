@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
         } else {
             char src_buf[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-            printf("Sent packet from %s:%d\n", src_buf, random_port());
+            // printf("Sent packet from %s:%d\n", src_buf, random_port());
         }
 
     }

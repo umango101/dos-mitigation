@@ -195,7 +195,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 				}
 			}
 		}
-		dnsh->tid = __constant_htons(best_nonce);
+		//dnsh->tid = __constant_htons(best_nonce);
 	}
 	return hash_iters;
 }
@@ -271,7 +271,7 @@ int tc_egress(struct __sk_buff *skb) {
         if ((void *)dnsh + sizeof(*dnsh) > data_end)
                 return TC_ACT_OK;
 
-	uint32_t iters = (uint32_t)do_dns_pow(iph, udph, dnsh);
+	// uint32_t iters = (uint32_t)do_dns_pow(iph, udph, dnsh);
 
 	// uint32_t *past_iters;
 	// uint32_t dir = 1;

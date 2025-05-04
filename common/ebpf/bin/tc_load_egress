@@ -8,5 +8,9 @@ else
 fi
 
 for _dev in "${_devs[@]}"; do 
-    sudo tc filter add dev $_dev egress bpf direct-action obj $_prog section egress
+#    sudo tc filter add dev $_dev egress bpf direct-action obj $_prog section egress || {
+    sudo tc filter add dev $_dev egress protocol all bpf direct-action obj $_prog section egress || {
+        echo "Failed to attach BPF to egress on $_dev"
+        exit 1
+    }
 done
