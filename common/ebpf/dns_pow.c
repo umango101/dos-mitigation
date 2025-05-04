@@ -95,13 +95,13 @@ struct dns_header {
         uint16_t        nother;         /* Other PRs */
 } __attribute__((packed));
 
-//static __inline bool is_tcp(struct ethhdr *ethh, struct iphdr *iph) {
-//	return (ethh->h_proto == __constant_htons(ETH_P_IP) && iph->protocol == IPPROTO_TCP);
-//}
+static __inline bool is_udp(struct ethhdr *ethh, struct iphdr *iph) {
+	return (ethh->h_proto == __constant_htons(ETH_P_IP) && iph->protocol == IPPROTO_UDP);
+}
 
-//static __inline bool is_syn(struct tcphdr* tcph) {
-//	return (tcph->syn && !(tcph->ack) && !(tcph->fin) &&!(tcph->rst) &&!(tcph->psh));
-//}
+static __inline bool is_dns(struct udphdr *udph) {
+	return (udph->dest == htons(53));
+}
 
 static __inline unsigned long SuperFastHash (const char* data, int len) {
 	uint32_t hash = len, tmp;
@@ -184,7 +184,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 	if (POW_THRESHOLD > 0) {
 		#pragma unroll
 		for (unsigned short i=0; i<MAX_ITERS; i++) {
-			digest.tid = __constant_htonl(nonce + i);
+			digest.tid = __constant_htons(nonce + i);
 			hash = dns_hash(&digest);
 			hash_iters += 1;
 			if (hash > best_hash) {
@@ -195,7 +195,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 				}
 			}
 		}
-		dnsh->tid = __constant_htonl(best_nonce);
+		dnsh->tid = __constant_htons(best_nonce);
 	}
 	return hash_iters;
 }
@@ -223,9 +223,9 @@ int tc_ingress(struct __sk_buff *skb) {
 	if ((void *)udph + sizeof(*udph) > data_end)
 		return TC_ACT_OK;
 
-	//if (!is_syn(tcph))
-	//	return TC_ACT_OK;
-	//
+	if (!is_dns(udph))
+		return TC_ACT_OK;
+	
 	struct dns_header *dnsh = (void *) udph + sizeof(*udph);
 	if ((void *)dnsh + sizeof(*dnsh) > data_end)
                 return TC_ACT_OK;
@@ -264,9 +264,9 @@ int tc_egress(struct __sk_buff *skb) {
 	if ((void *)udph + sizeof(*udph) > data_end)
 		return TC_ACT_OK;
 
-	//if (!is_syn(tcph))
-	//	return TC_ACT_OK;
-	//
+	if (!is_dns(udph))
+		return TC_ACT_OK;
+	
 	struct dns_header *dnsh = (void *)udph + sizeof(*udph);
         if ((void *)dnsh + sizeof(*dnsh) > data_end)
                 return TC_ACT_OK;
