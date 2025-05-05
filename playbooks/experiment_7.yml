@@ -108,7 +108,7 @@
   gather_facts: no
   tasks:
   - name: get auth2 IP
-    shell: "getent hosts auth0 | awk '{ print $1 }'"
+    shell: "getent hosts auth2 | awk '{ print $1 }'"
     register: auth2_ip
   - name: get local IP
     shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
@@ -283,7 +283,7 @@
   gather_facts: no
   tasks:
   - name: get auth2 IP
-    shell: "getent hosts auth0 | awk '{ print $1 }'"
+    shell: "getent hosts auth2 | awk '{ print $1 }'"
     register: auth2_ip
   - name: get local IP
     shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
