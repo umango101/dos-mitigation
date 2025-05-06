@@ -9,6 +9,7 @@
 #include <stdbool.h>
 // #include <float.h>
 #include "bpf_elf.h"
+//#include <stdio.h>
 
 #ifndef __section
 # define __section(NAME)                  \
@@ -161,6 +162,7 @@ static __inline bool valid_dns_pow(struct iphdr* iph, struct udphdr* udph, struc
         digest.tid = dnsh->tid;
 
 	unsigned long hash = dns_hash(&digest);
+	// printf("pow: %x, tid: %x, hash: %ld\n", POW_THRESHOLD, dnsh->tid, hash);
 	bool valid = (hash >= (unsigned long) POW_THRESHOLD);
 	return valid;
 }

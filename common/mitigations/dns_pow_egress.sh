@@ -14,7 +14,7 @@ for _dev in "${_devs[@]}"; do
   /usr/local/dos-mitigation/common/ebpf/bin/tc_clear $_dev
   if [[ $_toggle -eq 1 ]]; then
     # theta = 2^32 * ((k-1) / k)
-    pow_threshold=$(echo "(($_iters - 1) / $_iters) * 4294967296.0" | bc -l)
+    pow_threshold=$(echo "(($_iters - 1) / $_iters) * 65536.0" | bc -l)
     # strip decimals
     pow_threshold=${pow_threshold%.*}
     if [ -z "$pow_threshold" ]; then

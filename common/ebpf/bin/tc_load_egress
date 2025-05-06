@@ -4,7 +4,7 @@ _prog=$1
 if [ -z "$2" ]; then
     _devs=($(/usr/local/dos-mitigation/common/bin/list_exp_devs))
 else
-    _dev=($2)
+    _devs=($2)
 fi
 
 for _dev in "${_devs[@]}"; do 
