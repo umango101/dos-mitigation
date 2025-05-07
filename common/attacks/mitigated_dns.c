@@ -13,7 +13,7 @@
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.4.1"
 #define DEFAULT_DST_IP "10.0.1.1"
-#define MAX_ITERS 64
+#define MAX_ITERS 256
 #define POW_THRESHOLD 3865470565 //iters = 10, can change
 
 #if !defined (get16bits)
@@ -100,7 +100,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     unsigned long best_hash = 0;
     unsigned short hash_iters = 0;
         // unsigned long nonce = bp, __u32 old_ack_seqf_get_prandom_u32();
-    unsigned long nonce = 1;
+    unsigned long nonce = rand() % (0xffff);
         // unsigned long nonce = (unsigned long)(e->start_ts & 0xffffffff);
     unsigned long best_nonce = nonce;
 
@@ -283,7 +283,13 @@ int main(int argc, char *argv[]) {
     //free(pseudogram);
 
     while (1) {
+	dnsh->tid = htons(rand() % (0xffff));
+	//struct timeval start, end;
+	//gettimeofday(&start, NULL);
 	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
+	//gettimeofday(&end, NULL);
+	//long elapsed = (end.tv_sec - start.tv_sec) * 1000000L + (end.tv_usec - start.tv_usec);
+	printf("PoW iterations: %u\n", iters);
 	//uint32_t psize = sizeof(struct pseudo_header) + udp_len;
         //char *pseudogram = malloc(psize);
         //memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
