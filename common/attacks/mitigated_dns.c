@@ -14,7 +14,7 @@
 #define DEFAULT_SRC_IP "10.0.4.1"
 #define DEFAULT_DST_IP "10.0.1.1"
 #define MAX_ITERS 256
-#define POW_THRESHOLD 3865470565 //iters = 10, can change
+#define POW_THRESHOLD 4209067950 //iters = 10, can change
 
 #if !defined (get16bits)
 #define get16bits(d) ((((unsigned long)(((const unsigned char *)(d))[1])) << 8)\
@@ -100,7 +100,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     unsigned long best_hash = 0;
     unsigned short hash_iters = 0;
         // unsigned long nonce = bp, __u32 old_ack_seqf_get_prandom_u32();
-    unsigned long nonce = rand() % (0xffff);
+    unsigned long nonce = rand() % 0xffff;
         // unsigned long nonce = (unsigned long)(e->start_ts & 0xffffffff);
     unsigned long best_nonce = nonce;
 
@@ -114,12 +114,13 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     if (POW_THRESHOLD > 0) {
         #pragma unroll
         for (unsigned short i=0; i<MAX_ITERS; i++) {
-            digest.tid = htons(rand() % (0xffff));
+	    nonce = (nonce + 1) % 0xffff;
+            digest.tid = htons(nonce);
             hash = dns_hash(&digest);
 	    //printf("%lu\n", hash);
             hash_iters += 1;
             if (hash > best_hash) {
-                best_nonce = digest.tid;
+                best_nonce = nonce;
                 best_hash = hash;
                 if (best_hash >= POW_THRESHOLD) {
                     break;
@@ -301,6 +302,15 @@ int main(int argc, char *argv[]) {
 	udph->source = htons(random_port());
 	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
 	//printf("PoW iterations: %u\n", iters);
+	unsigned long hash = 0;
+        struct message_digest digest;
+        digest.saddr = iph->saddr;
+        digest.daddr = iph->daddr;
+        digest.sport = udph->source;
+        digest.dport = udph->dest;
+        digest.tid = dnsh->tid;
+        hash = dns_hash(&digest);
+	printf("hash: %lu", hash);
 	udp_len = sizeof(struct udphdr) + sizeof(struct dns_header) + query_len;
 	udph->len = htons(udp_len);
 	ip_len = sizeof(struct iphdr) + udp_len;
@@ -319,6 +329,13 @@ int main(int argc, char *argv[]) {
 	udph->check = 0;  // Set to 0 before computing
 	//udph->check = csum((unsigned short *)pseudogram, psize);
 	free(pseudogram);
+	digest.saddr = iph->saddr;
+        digest.daddr = iph->daddr;
+        digest.sport = udph->source;
+        digest.dport = udph->dest;
+        digest.tid = dnsh->tid;
+        hash = dns_hash(&digest);
+        printf("hash before sending: %lu", hash);
         if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
             perror("sendto");
         } else {
