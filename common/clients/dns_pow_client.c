@@ -111,7 +111,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     digest.dport = udph->dest;
     digest.tid = dnsh->tid;
 
-    if (POW_THRESHOLD > 0) {
+    if (threshold > 0) {
         #pragma unroll
         for (unsigned short i=0; i<MAX_ITERS; i++) {
             digest.tid = htons(nonce + i);
@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
     
     char *src_ip_str = DEFAULT_SRC_IP;
     char *dst_ip_str = argv[1];
-    char pow_threshold = argv[2]
+    char pow_threshold = (uint32_t)strtoul(argv[2], NULL, 1);
     
     printf("set ips\n");
 
@@ -275,8 +275,8 @@ int main(int argc, char *argv[]) {
     psh.protocol = IPPROTO_UDP;
     psh.udp_length = htons(udp_len);
 
-    uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
-    psize = sizeof(struct pseudo_header) + udp_len;
+    uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh, pow_threshold);
+    uint32_t psize = sizeof(struct pseudo_header) + udp_len;
     char *pseudogram = malloc(psize);
     memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
     memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
@@ -290,7 +290,53 @@ int main(int argc, char *argv[]) {
         // printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
     }
 
-    close(sock);
-    return 0;
-}
+    int recv_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (recv_sock < 0) {
+	perror("recv socket");
+	exit(1);
+    }
 
+    struct sockaddr_in recv_addr;
+    memset(&recv_addr, 0, sizeof(recv_addr));
+    recv_addr.sin_family = AF_INET;
+    recv_addr.sin_port = udph->source;
+    recv_addr.sin_addr.s_addr = inet_addr(src_ip_str);
+
+    if (bind(recv_sock, (struct sockaddr *)&recv_addr, sizeof(recv_addr)) < 0) {
+	perror("bind");
+	close(recv_sock);
+	exit(1);
+    }
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(recv_sock, &readfds);
+
+    struct timeval timeout;
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
+
+    int ready = select(recv_sock + 1, &readfds, NULL, NULL, &timeout);
+    if (ready < 0) {
+        perror("select");
+	exit(1);
+    } else if (ready == 0) {
+        printf("Error: DNS response timeout.\n");
+	exit(1);
+    } else {
+        char buf[512];
+        struct sockaddr_in from;
+        socklen_t fromlen = sizeof(from);
+        int len = recvfrom(recv_sock, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
+        if (len < 0) {
+            perror("recvfrom");
+        } else {
+            printf("Received DNS response (%d bytes).\n", len);
+        }
+    }
+
+    close(sock);
+    close(recv_sock);
+    return 0;
+
+}

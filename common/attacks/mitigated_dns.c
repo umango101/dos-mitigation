@@ -275,16 +275,16 @@ int main(int argc, char *argv[]) {
     psh.protocol = IPPROTO_UDP;
     psh.udp_length = htons(udp_len);
 
-    int psize = sizeof(struct pseudo_header) + udp_len;
-    char *pseudogram = malloc(psize);
-    memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
-    memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
-    udph->check = csum((unsigned short *)pseudogram, psize);
-    free(pseudogram);
+    //int psize = sizeof(struct pseudo_header) + udp_len;
+    //char *pseudogram = malloc(psize);
+    //memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
+    //memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
+    //udph->check = csum((unsigned short *)pseudogram, psize);
+    //free(pseudogram);
 
     while (1) {
 	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
-	psize = sizeof(struct pseudo_header) + udp_len;
+	uint32_t psize = sizeof(struct pseudo_header) + udp_len;
         char *pseudogram = malloc(psize);
         memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
         memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
