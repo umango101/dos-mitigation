@@ -9,6 +9,7 @@
 #include <stdbool.h>
 // #include <float.h>
 #include "bpf_elf.h"
+#include <stddef.h>
 //#include <stdio.h>
 
 #ifndef __section
@@ -56,7 +57,7 @@
 // #endif
 
 // const unsigned long POW_THRESHOLD = 4278190080;
-const unsigned short MAX_ITERS = 256;
+const unsigned short MAX_ITERS = 64;
 
 static void *BPF_FUNC(map_lookup_elem, void *map, const void *key);
 
@@ -275,6 +276,16 @@ int tc_egress(struct __sk_buff *skb) {
                 return TC_ACT_OK;
 
 	uint32_t iters = (uint32_t)do_dns_pow(iph, udph, dnsh);
+
+	//__u32 ip_off = sizeof(struct ethhdr);
+	//__u32 udp_off = ip_off + sizeof(struct iphdr);
+	//__u32 dns_tid_off = udp_off + sizeof(struct udphdr);
+	//__u32 udp_check_off = udp_off + offsetof(struct udphdr, check);
+
+	//__u16 new_tid = dnsh->tid;
+
+	//bpf_skb_store_bytes(skb, dns_tid_off, &new_tid, sizeof(new_tid), 0);
+	//bpf_skb_store_bytes(skb, udp_check_off, &udph->check, sizeof(udph->check), 0);
 
 	// uint32_t *past_iters;
 	// uint32_t dir = 1;
