@@ -198,6 +198,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 			}
 		}
 		dnsh->tid = __constant_htons(best_nonce);
+		udph->check = 0;
 	}
 	return hash_iters;
 }
