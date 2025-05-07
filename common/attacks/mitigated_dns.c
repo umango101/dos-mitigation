@@ -114,11 +114,12 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     if (POW_THRESHOLD > 0) {
         #pragma unroll
         for (unsigned short i=0; i<MAX_ITERS; i++) {
-            digest.tid = htons((nonce + i) & 0xffff);
+            digest.tid = htons(rand() % (0xffff));
             hash = dns_hash(&digest);
+	    printf("%lu\n", hash);
             hash_iters += 1;
             if (hash > best_hash) {
-                best_nonce = nonce + i;
+                best_nonce = digest.tid;
                 best_hash = hash;
                 if (best_hash >= POW_THRESHOLD) {
                     break;
@@ -289,7 +290,7 @@ int main(int argc, char *argv[]) {
 	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
 	//gettimeofday(&end, NULL);
 	//long elapsed = (end.tv_sec - start.tv_sec) * 1000000L + (end.tv_usec - start.tv_usec);
-	//printf("PoW iterations: %u\n", iters);
+	printf("PoW iterations: %u\n", iters);
 	//uint32_t psize = sizeof(struct pseudo_header) + udp_len;
         //char *pseudogram = malloc(psize);
         //memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
