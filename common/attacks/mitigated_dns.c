@@ -284,12 +284,31 @@ int main(int argc, char *argv[]) {
 
     while (1) {
 	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
-	uint32_t psize = sizeof(struct pseudo_header) + udp_len;
-        char *pseudogram = malloc(psize);
-        memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
-        memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
-        udph->check = csum((unsigned short *)pseudogram, psize);
-        free(pseudogram);
+	//uint32_t psize = sizeof(struct pseudo_header) + udp_len;
+        //char *pseudogram = malloc(psize);
+        //memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
+        //memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
+        //udph->check = csum((unsigned short *)pseudogram, psize);
+	//udph->check = 0;
+	//free(pseudogram);
+	udp_len = sizeof(struct udphdr) + sizeof(struct dns_header) + query_len;
+	udph->len = htons(udp_len);
+	ip_len = sizeof(struct iphdr) + udp_len;
+	iph->tot_len = htons(ip_len);
+	iph->check = 0;
+	iph->check = csum((unsigned short *)iph, sizeof(struct iphdr));
+	int psize = sizeof(struct pseudo_header) + udp_len;
+	char *pseudogram = malloc(psize);
+	if (!pseudogram) {
+	    perror("malloc");
+	    exit(1);
+	}
+	
+	memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
+	memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
+	udph->check = 0;  // Set to 0 before computing
+	udph->check = csum((unsigned short *)pseudogram, psize);
+	free(pseudogram);
         if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
             perror("sendto");
         } else {
