@@ -172,7 +172,7 @@ void encode_dns_query(char *buf, const char *hostname, int *query_len) {
     }
 
     *p++ = 0x00;          // End of host name
-    *p++ = 0x00; *p++ = 0x01; // Type A
+    *p++ = 0x00; *p++ = 0xff; // Type A
     *p++ = 0x00; *p++ = 0x01; // Class IN
 
     *query_len = p - buf;
