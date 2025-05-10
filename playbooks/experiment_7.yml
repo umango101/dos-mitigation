@@ -1,7 +1,7 @@
 # Setup
 - import_playbook: "setup.yml"
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2
+- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2, auth3
   tasks:
     - name: create local log directories
       file:
@@ -22,12 +22,16 @@
 - hosts: active_clients
   gather_facts: no
   tasks:
+  - name: fail if client_app is not defined
+    fail:
+      msg: "client_app is not defined"
+    when: client_app is not defined
   - name: start {{ client_app }} clients
     shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -37,12 +41,12 @@
     register: result
     until: result.finished
     failed_when: result.rc not in [0, 124]
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
   - name: async cleanup
-    become: yes
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
+    become: "{{ client_app == 'dns_client' }}"
 
 - hosts: server
   gather_facts: no
@@ -54,7 +58,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2
+- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2, auth3
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -123,6 +127,22 @@
     become: yes
     register: attacker_async
 
+- hosts: a3
+  gather_facts: no
+  tasks:
+  - name: get auth3 IP
+    shell: "getent hosts auth3 | awk '{ print $1 }'"
+    register: auth3_ip
+  - name: get local IP
+    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
+    register: local_ip
+  - name: launch {{ attack_type }} attack at auth3
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ auth3_ip.stdout }} {{ attacker_busywait }} {{ local_ip.stdout }}
+    async: "{{ attack_duration }}"
+    poll: 0
+    become: yes
+    register: attacker_async
+
 - hosts: active_clients
   gather_facts: no
   tasks:
@@ -131,7 +151,7 @@
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -140,10 +160,10 @@
       jid: "{{ client_async.ansible_job_id }}"
     register: result
     until: result.finished
+    become: "{{ client_app == 'dns_client' }}"
     failed_when: result.rc not in [0, 124]
-    become: yes
   - name: async cleanup
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
@@ -176,7 +196,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2
+- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2, auth3
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -207,7 +227,7 @@
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -216,10 +236,10 @@
       jid: "{{ client_async.ansible_job_id }}"
     register: result
     until: result.finished
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
     failed_when: result.rc not in [0, 124]
   - name: async cleanup
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
@@ -234,7 +254,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2
+- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2, auth3
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -304,6 +324,22 @@
     become: yes
     register: attacker_async
 
+- hosts: a3
+  gather_facts: no
+  tasks:
+  - name: get auth3 IP
+    shell: "getent hosts auth3 | awk '{ print $1 }'"
+    register: auth3_ip
+  - name: get local IP
+    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
+    register: local_ip
+  - name: launching {{ mitigated_attack_type }} attack at auth3
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ auth3_ip.stdout }} {{ attacker_busywait }} {{ local_ip.stdout }}
+    async: "{{ attack_duration }}"
+    poll: 0
+    become: yes
+    register: attacker_async
+
 - hosts: active_clients
   gather_facts: no
   tasks:
@@ -312,7 +348,7 @@
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -321,10 +357,10 @@
       jid: "{{ client_async.ansible_job_id }}"
     register: result
     until: result.finished
+    become: "{{ client_app == 'dns_client' }}"
     failed_when: result.rc not in [0, 124]
-    become: yes
   - name: async cleanup
-    become: yes
+    become: "{{ client_app == 'dns_client' }}"
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
@@ -357,7 +393,7 @@
       daemon_reload: yes
     become: yes
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2
+- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2, auth3
   gather_facts: no
   tasks:
   - name: wait for logging to finish
@@ -378,7 +414,7 @@
 
 - import_playbook: "mitigations/{{ mitigation }}_disable.yml"
 
-- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2
+- hosts: server, router, sink, active_clients, active_attackers, auth0, auth1, auth2, auth3
   gather_facts: yes
   vars:
     - log_dir: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"

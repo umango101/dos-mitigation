@@ -1,5 +1,5 @@
 - name: Enable DNS PoW at Auth Ingress
-  hosts: auth0, auth1, auth2
+  hosts: auth0, auth1, auth2, auth3
   tasks:
     - name: setup tc qdisc
       shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"

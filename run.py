@@ -70,7 +70,7 @@ for p in permutations:
   if len(p['attack_mitigation_pair']) > 2:
     p['mitigated_attack_type'] = "mitigated_dns"
   else:
-    p['mitigated_attack_type'] = attack_type
+    p['mitigated_attack_type'] = "mitigated_dns"
   p['attack_mitigation_pair'] = '"' + ','.join(p['attack_mitigation_pair']) + '"'
 
   
