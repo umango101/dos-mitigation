@@ -13,8 +13,8 @@
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.4.1"
 #define DEFAULT_DST_IP "10.0.1.1"
-#define MAX_ITERS 256
-#define POW_THRESHOLD 4209067950 //iters = 10, can change
+#define MAX_ITERS 1000
+#define POW_THRESHOLD 4286377360 //iters = 500, can change
 
 #if !defined (get16bits)
 #define get16bits(d) ((((unsigned long)(((const unsigned char *)(d))[1])) << 8)\
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
     char *src_ip_str = DEFAULT_SRC_IP;
     char *dst_ip_str = argv[1];
     
-    printf("set ips\n");
+    // printf("set ips\n");
 
     // if (argc > 1) {
     //     strcpy(dst_ip_str, argv[0]);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
     //     printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
     //     exit(1);
     // }
-    printf("set auth ips\n");
+    // printf("set auth ips\n");
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
@@ -302,15 +302,15 @@ int main(int argc, char *argv[]) {
 	udph->source = htons(random_port());
 	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
 	//printf("PoW iterations: %u\n", iters);
-	unsigned long hash = 0;
-        struct message_digest digest;
-        digest.saddr = iph->saddr;
-        digest.daddr = iph->daddr;
-        digest.sport = udph->source;
-        digest.dport = udph->dest;
-        digest.tid = dnsh->tid;
-        hash = dns_hash(&digest);
-	printf("hash: %lu", hash);
+	//unsigned long hash = 0;
+        //struct message_digest digest;
+        //digest.saddr = iph->saddr;
+        //digest.daddr = iph->daddr;
+        //digest.sport = udph->source;
+        //digest.dport = udph->dest;
+        //digest.tid = dnsh->tid;
+        //hash = dns_hash(&digest);
+	//printf("hash: %lu", hash);
 	udp_len = sizeof(struct udphdr) + sizeof(struct dns_header) + query_len;
 	udph->len = htons(udp_len);
 	ip_len = sizeof(struct iphdr) + udp_len;
@@ -329,13 +329,13 @@ int main(int argc, char *argv[]) {
 	udph->check = 0;  // Set to 0 before computing
 	//udph->check = csum((unsigned short *)pseudogram, psize);
 	free(pseudogram);
-	digest.saddr = iph->saddr;
-        digest.daddr = iph->daddr;
-        digest.sport = udph->source;
-        digest.dport = udph->dest;
-        digest.tid = dnsh->tid;
-        hash = dns_hash(&digest);
-        printf("hash before sending: %lu", hash);
+	//digest.saddr = iph->saddr;
+        //digest.daddr = iph->daddr;
+        //digest.sport = udph->source;
+        //digest.dport = udph->dest;
+        //digest.tid = dnsh->tid;
+        //hash = dns_hash(&digest);
+        //printf("hash before sending: %lu", hash);
         if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
             perror("sendto");
         } else {

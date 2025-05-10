@@ -1,5 +1,5 @@
 - name: Enable DNS PoW at Auth Ingress
-  hosts: auth0, auth1
+  hosts: auth0, auth1, auth2
   tasks:
     - name: setup tc qdisc
       shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
@@ -7,31 +7,31 @@
       failed_when: result.rc != 0 and "cannot modify" not in result.stderr
       become: yes
     - name: re-compile and re-attach eBPF program
-      shell: "{{ user_dir }}/common/mitigations/dns_pow_ingress.sh 1 2"
+      shell: "{{ user_dir }}/common/mitigations/dns_pow_ingress.sh 1 500"
       become: yes
 
-- name: Enable DNS PoW at Client Egress
-  hosts: active_clients
-  tasks:
-    - name: setup tc qdisc
-      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
-      register: result
-      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
-      become: yes
-    - name: re-compile and re-attach eBPF program
-      shell: "{{ user_dir }}/common/mitigations/dns_pow_egress.sh 1 2"
-      become: yes
-
-- name: Enable DNS PoW at Attacker Egress
-  hosts: active_attackers
-  tasks:
-    - name: setup tc qdisc
-      when: attackers_do_mitigation == 1
-      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
-      register: result
-      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
-      become: yes
-    - name: re-compile and re-attach eBPF program
-      when: attackers_do_mitigation == 1
-      shell: "{{ user_dir }}/common/mitigations/dns_pow_egress.sh 1 2"
-      become: yes
+        #- name: Enable DNS PoW at Client Egress
+        #  hosts: active_clients
+        #  tasks:
+        #    - name: setup tc qdisc
+        #      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
+        #      register: result
+        #      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
+        #      become: yes
+        #    - name: re-compile and re-attach eBPF program
+        #      shell: "{{ user_dir }}/common/mitigations/dns_pow_egress.sh 1 2"
+        #      become: yes
+        #
+        #- name: Enable DNS PoW at Attacker Egress
+        #  hosts: active_attackers
+        #  tasks:
+        #    - name: setup tc qdisc
+        #      when: attackers_do_mitigation == 1
+        #      shell: "{{ user_dir }}/common/ebpf/bin/tc_setup"
+        #      register: result
+        #      failed_when: result.rc != 0 and "cannot modify" not in result.stderr
+        #      become: yes
+        #    - name: re-compile and re-attach eBPF program
+        #      when: attackers_do_mitigation == 1
+        #      shell: "{{ user_dir }}/common/mitigations/dns_pow_egress.sh 1 2"
+        #      become: yes

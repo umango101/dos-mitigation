@@ -23,10 +23,11 @@
   gather_facts: no
   tasks:
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
+    become: yes
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -36,7 +37,9 @@
     register: result
     until: result.finished
     failed_when: result.rc not in [0, 124]
+    become: yes
   - name: async cleanup
+    become: yes
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
@@ -124,10 +127,11 @@
   gather_facts: no
   tasks:
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
+    become: yes
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -137,7 +141,9 @@
     register: result
     until: result.finished
     failed_when: result.rc not in [0, 124]
+    become: yes
   - name: async cleanup
+    become: yes
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
@@ -197,10 +203,11 @@
   gather_facts: no
   tasks:
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4286377360 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
+    become: yes
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -209,8 +216,10 @@
       jid: "{{ client_async.ansible_job_id }}"
     register: result
     until: result.finished
+    become: yes
     failed_when: result.rc not in [0, 124]
   - name: async cleanup
+    become: yes
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup
@@ -299,10 +308,11 @@
   gather_facts: no
   tasks:
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4286377360 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
+    become: yes
   - name: wait for clients
     pause:
       seconds: "{{ client_duration }}"
@@ -312,7 +322,9 @@
     register: result
     until: result.finished
     failed_when: result.rc not in [0, 124]
+    become: yes
   - name: async cleanup
+    become: yes
     async_status:
       jid: "{{ client_async.ansible_job_id }}"
       mode: cleanup

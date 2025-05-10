@@ -13,7 +13,7 @@
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.5.5"
 #define DEFAULT_DST_IP "10.0.1.1"
-#define MAX_ITERS 64
+#define MAX_ITERS 1000
 //#define POW_THRESHOLD 3865470565 //iters = 10, can change
 
 #if !defined (get16bits)
@@ -100,7 +100,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     unsigned long best_hash = 0;
     unsigned short hash_iters = 0;
         // unsigned long nonce = bp, __u32 old_ack_seqf_get_prandom_u32();
-    unsigned long nonce = 1;
+    unsigned long nonce = rand() % 0xffff;
         // unsigned long nonce = (unsigned long)(e->start_ts & 0xffffffff);
     unsigned long best_nonce = nonce;
 
@@ -114,11 +114,13 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     if (threshold > 0) {
         #pragma unroll
         for (unsigned short i=0; i<MAX_ITERS; i++) {
-            digest.tid = htons(nonce + i);
+            nonce = (nonce + 1) % 0xffff;
+            digest.tid = htons(nonce);
             hash = dns_hash(&digest);
+            //printf("%lu\n", hash);
             hash_iters += 1;
             if (hash > best_hash) {
-                best_nonce = nonce + i;
+                best_nonce = nonce;
                 best_hash = hash;
                 if (best_hash >= threshold) {
                     break;
@@ -198,9 +200,9 @@ int main(int argc, char *argv[]) {
     
     char *src_ip_str = DEFAULT_SRC_IP;
     char *dst_ip_str = argv[1];
-    char pow_threshold = (uint32_t)strtoul(argv[2], NULL, 1);
+    uint32_t pow_threshold = strtoul(argv[2], NULL, 10);
     
-    printf("set ips\n");
+    //printf("set ips\n");
 
     // if (argc > 1) {
     //     strcpy(dst_ip_str, argv[0]);
@@ -233,7 +235,7 @@ int main(int argc, char *argv[]) {
     encode_dns_query(dns_query, "www.google.com", &query_len);
 
     // DNS Header
-    dnsh->tid = htons(0x1234);
+    dnsh->tid = htons(rand() % 0xffff);
     dnsh->flags = htons(0x0100); // standard query
     dnsh->nqueries = htons(1);
     dnsh->nanswers = 0;
@@ -282,6 +284,16 @@ int main(int argc, char *argv[]) {
     memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
     udph->check = csum((unsigned short *)pseudogram, psize);
     free(pseudogram);
+    unsigned long hash = 0;
+    //struct message_digest digest;
+    //digest.saddr = iph->saddr;
+    //digest.daddr = iph->daddr;
+    //digest.sport = udph->source;
+    //digest.dport = udph->dest;
+    //digest.tid = dnsh->tid;
+
+    //hash = dns_hash(&digest);
+    //printf("Hash: %lu, pow_threshold: %d, iters = %d\n", hash, pow_threshold, iters);
     if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
         perror("sendto");
     } else {
@@ -321,7 +333,7 @@ int main(int argc, char *argv[]) {
         perror("select");
 	exit(1);
     } else if (ready == 0) {
-        printf("Error: DNS response timeout.\n");
+        //printf("Error: DNS response timeout.\n");
 	exit(1);
     } else {
         char buf[512];
@@ -331,7 +343,7 @@ int main(int argc, char *argv[]) {
         if (len < 0) {
             perror("recvfrom");
         } else {
-            printf("Received DNS response (%d bytes).\n", len);
+            //printf("Received DNS response (%d bytes).\n", len);
         }
     }
 
