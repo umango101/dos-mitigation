@@ -13,7 +13,7 @@
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.6.6"
 #define DEFAULT_DST_IP "10.0.1.1"
-#define MAX_ITERS 1000
+#define MAX_ITERS 1500
 //#define POW_THRESHOLD 3865470565 //iters = 10, can change
 
 #if !defined (get16bits)
