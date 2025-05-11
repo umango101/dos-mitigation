@@ -2,7 +2,7 @@
 
 # Simple DNS Client
 
-server_name=auth0
+server_name="auth0"
 server_ip="10.0.1.1"
 server_port=53
 request_interval=$2
