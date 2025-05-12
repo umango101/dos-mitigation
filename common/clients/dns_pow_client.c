@@ -13,7 +13,7 @@
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.6.6"
 #define DEFAULT_DST_IP "10.0.1.1"
-#define MAX_ITERS 100
+#define MAX_ITERS 1500
 //#define POW_THRESHOLD 3865470565 //iters = 10, can change
 
 #if !defined (get16bits)
@@ -293,13 +293,13 @@ int main(int argc, char *argv[]) {
     digest.tid = dnsh->tid;
 
     hash = dns_hash(&digest);
-    printf("Hash: %lu, pow_threshold: %d, iters = %d\n", hash, pow_threshold, iters);
+    //printf("Hash: %lu, pow_threshold: %d, iters = %d\n", hash, pow_threshold, iters);
     if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
         perror("sendto");
     } else {
         char src_buf[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-        printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
+        //printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
     }
 
     int recv_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -333,7 +333,7 @@ int main(int argc, char *argv[]) {
         perror("select");
 	exit(1);
     } else if (ready == 0) {
-        printf("Error: DNS response timeout.\n");
+        //printf("Error: DNS response timeout.\n");
 	exit(1);
     } else {
         char buf[512];
@@ -343,7 +343,7 @@ int main(int argc, char *argv[]) {
         if (len < 0) {
             perror("recvfrom");
         } else {
-            printf("Received DNS response (%d bytes).\n", len);
+            //printf("Received DNS response (%d bytes).\n", len);
         }
     }
 
