@@ -11,10 +11,9 @@
 
 #define MAX_PACKET_SIZE 1500
 #define DNS_PORT 53
-#define DEFAULT_SRC_IP "10.0.6.2"
-#define DEFAULT_DST_IP "10.0.1.1"
+#define DEFAULT_SRC_IP "10.0.7.1"
 #define MAX_ITERS 1500
-//#define POW_THRESHOLD 3865470565 //iters = 10, can change
+#define POW_THRESHOLD 4286377360 //iters = 500, can change
 
 #if !defined (get16bits)
 #define get16bits(d) ((((unsigned long)(((const unsigned char *)(d))[1])) << 8)\
@@ -95,7 +94,7 @@ static __inline unsigned long dns_hash(struct message_digest* digest) {
     return SuperFastHash((const char *)digest, sizeof(struct message_digest));
 }
 
-static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh, uint32_t threshold) {
+static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
     unsigned long hash = 0;
     unsigned long best_hash = 0;
     unsigned short hash_iters = 0;
@@ -111,18 +110,18 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     digest.dport = udph->dest;
     digest.tid = dnsh->tid;
 
-    if (threshold > 0) {
+    if (POW_THRESHOLD > 0) {
         #pragma unroll
         for (unsigned short i=0; i<MAX_ITERS; i++) {
-            nonce = (nonce + 1) % 0xffff;
+	    nonce = (nonce + 1) % 0xffff;
             digest.tid = htons(nonce);
             hash = dns_hash(&digest);
-            //printf("%lu\n", hash);
+	    //printf("%lu\n", hash);
             hash_iters += 1;
             if (hash > best_hash) {
                 best_nonce = nonce;
                 best_hash = hash;
-                if (best_hash >= threshold) {
+                if (best_hash >= POW_THRESHOLD) {
                     break;
                 }
             }
@@ -172,7 +171,7 @@ void encode_dns_query(char *buf, const char *hostname, int *query_len) {
     }
 
     *p++ = 0x00;          // End of host name
-    *p++ = 0x00; *p++ = 0x01; // Type A
+    *p++ = 0x00; *p++ = 0xff; // Type A
     *p++ = 0x00; *p++ = 0x01; // Class IN
 
     *query_len = p - buf;
@@ -193,23 +192,7 @@ uint16_t random_port(void) {
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    if (argc <= 2) {
-	printf("Please specify a target IP address and pow_threshold\n");
-        exit(1);
-    }
-    
-    char *src_ip_str = DEFAULT_SRC_IP;
-    char *dst_ip_str = argv[1];
-    uint32_t pow_threshold = strtoul(argv[2], NULL, 10);
-    
-    // printf("set ips\n");
-
-    // if (argc > 1) {
-    //     strcpy(dst_ip_str, argv[0]);
-    // } else {
-    //     printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
-    //     exit(1);
-    // }
+    const char *dst_ip[] = {"10.0.1.1", "10.0.2.1", "10.0.3.1", "10.0.4.1"};
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
@@ -235,7 +218,7 @@ int main(int argc, char *argv[]) {
     encode_dns_query(dns_query, "www.google.com", &query_len);
 
     // DNS Header
-    dnsh->tid = htons(rand() % 0xffff);
+    dnsh->tid = htons(0x1234);
     dnsh->flags = htons(0x0100); // standard query
     dnsh->nqueries = htons(1);
     dnsh->nanswers = 0;
@@ -246,109 +229,65 @@ int main(int argc, char *argv[]) {
     int udp_len = sizeof(struct udphdr) + dns_size;
     int ip_len = sizeof(struct iphdr) + udp_len;
 
+    int count = 0;
+
     // Destination
-    struct sockaddr_in sin;
-    memset(&sin, 0, sizeof(sin));
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(DNS_PORT);
-    sin.sin_addr.s_addr = inet_addr(DEFAULT_DST_IP);
+    while(1) {
+	char *src_ip_str = (char *) &DEFAULT_SRC_IP;
+        char *dst_ip_str = dst_ip[count % 4];
+        struct sockaddr_in sin;
+        memset(&sin, 0, sizeof(sin));
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(DNS_PORT);
+        sin.sin_addr.s_addr = inet_addr(*dst_ip_str);
 
-    iph->ihl = 5;
-    iph->version = 4;
-    iph->tos = 0;
-    iph->tot_len = htons(ip_len);
-    iph->id = htons(rand() % 65535);
-    iph->frag_off = 0;
-    iph->ttl = 64;
-    iph->protocol = IPPROTO_UDP;
-    iph->check = 0;
-    iph->saddr = inet_addr(DEFAULT_SRC_IP);
-    iph->daddr = sin.sin_addr.s_addr;
-    iph->check = csum((unsigned short *)iph, sizeof(struct iphdr));
+        iph->ihl = 5;
+        iph->version = 4;
+        iph->tos = 0;
+        iph->tot_len = htons(ip_len);
+        iph->id = htons(rand() % 65535);
+        iph->frag_off = 0;
+        iph->ttl = 64;
+        iph->protocol = IPPROTO_UDP;
+        iph->check = 0;
+        iph->saddr = inet_addr(*src_ip_str);
+        iph->daddr = sin.sin_addr.s_addr;
+        iph->check = csum((unsigned short *)iph, sizeof(struct iphdr));
 
-    udph->source = htons(random_port());
-    udph->dest = htons(DNS_PORT);
-    udph->len = htons(udp_len);
-    udph->check = 0;
+        udph->source = htons(random_port());
+        udph->dest = htons(DNS_PORT);
+        udph->len = htons(udp_len);
+        udph->check = 0;
 
-    psh.src = iph->saddr;
-    psh.dst = iph->daddr;
-    psh.placeholder = 0;
-    psh.protocol = IPPROTO_UDP;
-    psh.udp_length = htons(udp_len);
+        psh.src = iph->saddr;
+        psh.dst = iph->daddr;
+        psh.placeholder = 0;
+        psh.protocol = IPPROTO_UDP;
+        psh.udp_length = htons(udp_len);
 
-    uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh, pow_threshold);
-    uint32_t psize = sizeof(struct pseudo_header) + udp_len;
-    char *pseudogram = malloc(psize);
-    memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
-    memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
-    udph->check = csum((unsigned short *)pseudogram, psize);
-    free(pseudogram);
-    unsigned long hash = 0;
-    struct message_digest digest;
-    digest.saddr = iph->saddr;
-    digest.daddr = iph->daddr;
-    digest.sport = udph->source;
-    digest.dport = udph->dest;
-    digest.tid = dnsh->tid;
-
-    hash = dns_hash(&digest);
-    //printf("Hash: %lu, pow_threshold: %d, iters = %d\n", hash, pow_threshold, iters);
-    if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-        perror("sendto");
-    } else {
-        char src_buf[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-        //printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
-    }
-
-    int recv_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (recv_sock < 0) {
-	perror("recv socket");
-	exit(1);
-    }
-
-    struct sockaddr_in recv_addr;
-    memset(&recv_addr, 0, sizeof(recv_addr));
-    recv_addr.sin_family = AF_INET;
-    recv_addr.sin_port = udph->source;
-    recv_addr.sin_addr.s_addr = inet_addr(src_ip_str);
-
-    if (bind(recv_sock, (struct sockaddr *)&recv_addr, sizeof(recv_addr)) < 0) {
-	perror("bind");
-	close(recv_sock);
-	exit(1);
-    }
-
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(recv_sock, &readfds);
-
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-
-    int ready = select(recv_sock + 1, &readfds, NULL, NULL, &timeout);
-    if (ready < 0) {
-        perror("select");
-	exit(1);
-    } else if (ready == 0) {
-        //printf("Error: DNS response timeout.\n");
-	exit(1);
-    } else {
-        char buf[512];
-        struct sockaddr_in from;
-        socklen_t fromlen = sizeof(from);
-        int len = recvfrom(recv_sock, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen);
-        if (len < 0) {
-            perror("recvfrom");
+	dnsh->tid = htons(rand() % (0xffff));
+	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
+	int psize = sizeof(struct pseudo_header) + udp_len;
+	char *pseudogram = malloc(psize);
+	if (!pseudogram) {
+	    perror("malloc");
+	    exit(1);
+	}
+	
+	memcpy(pseudogram, &psh, sizeof(struct pseudo_header));
+	memcpy(pseudogram + sizeof(struct pseudo_header), udph, udp_len);
+	free(pseudogram);
+        if (sendto(sock, datagram, ip_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+            perror("sendto");
         } else {
-            //printf("Received DNS response (%d bytes).\n", len);
+            char src_buf[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
+            // printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
         }
+	count = count + 1;
     }
 
     close(sock);
-    close(recv_sock);
     return 0;
-
 }
+
