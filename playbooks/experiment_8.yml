@@ -83,7 +83,7 @@
   gather_facts: no
   tasks:
   - name: launch {{ attack_type }} attack
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ attacker_busywait }} {{ local_ip.stdout }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ attacker_busywait }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -226,7 +226,7 @@
   gather_facts: no
   tasks:
   - name: launching {{ mitigated_attack_type }} attack
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ attacker_busywait }} {{ local_ip.stdout }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ attacker_busywait }} 
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -236,7 +236,7 @@
   gather_facts: no
   tasks:
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4286377360 }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4273492458 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async

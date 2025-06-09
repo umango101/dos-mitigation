@@ -13,7 +13,7 @@
 #define DNS_PORT 53
 #define DEFAULT_SRC_IP "10.0.7.1"
 #define MAX_ITERS 1500
-#define POW_THRESHOLD 4286377360 //iters = 500, can change
+#define POW_THRESHOLD 4273492458 //iters = 200, can change
 
 #if !defined (get16bits)
 #define get16bits(d) ((((unsigned long)(((const unsigned char *)(d))[1])) << 8)\
@@ -192,7 +192,8 @@ uint16_t random_port(void) {
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    const char *dst_ip[] = {"10.0.1.1", "10.0.2.1", "10.0.3.1", "10.0.4.1"};
+    char *src_ip_str = DEFAULT_SRC_IP;
+    char *dst_ip_str = "0";
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
@@ -231,15 +232,22 @@ int main(int argc, char *argv[]) {
 
     int count = 0;
 
-    // Destination
     while(1) {
-	char *src_ip_str = (char *) &DEFAULT_SRC_IP;
-        char *dst_ip_str = dst_ip[count % 4];
+	// Destination
+        if (count%4 == 0) {
+            dst_ip_str = "10.0.1.1";
+        } else if (count%4 == 1) {
+            dst_ip_str = "10.0.2.1";
+        } else if (count%4 == 2) {
+            dst_ip_str = "10.0.3.1";
+        } else {
+            dst_ip_str = "10.0.4.1";
+        }
         struct sockaddr_in sin;
         memset(&sin, 0, sizeof(sin));
         sin.sin_family = AF_INET;
         sin.sin_port = htons(DNS_PORT);
-        sin.sin_addr.s_addr = inet_addr(*dst_ip_str);
+        sin.sin_addr.s_addr = inet_addr(dst_ip_str);
 
         iph->ihl = 5;
         iph->version = 4;
@@ -250,7 +258,7 @@ int main(int argc, char *argv[]) {
         iph->ttl = 64;
         iph->protocol = IPPROTO_UDP;
         iph->check = 0;
-        iph->saddr = inet_addr(*src_ip_str);
+        iph->saddr = inet_addr(DEFAULT_SRC_IP);
         iph->daddr = sin.sin_addr.s_addr;
         iph->check = csum((unsigned short *)iph, sizeof(struct iphdr));
 
