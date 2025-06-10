@@ -11,7 +11,7 @@
 
 #define MAX_PACKET_SIZE 1500
 #define DNS_PORT 53
-#define DEFAULT_SRC_IP "10.0.7.1"
+#define DEFAULT_SRC_IP "10.0.11.1"
 #define MAX_ITERS 1500
 #define POW_THRESHOLD 4273492458 //iters = 200, can change
 

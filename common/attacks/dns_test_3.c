@@ -11,7 +11,7 @@
 
 #define MAX_PACKET_SIZE 1500
 #define DNS_PORT 53
-#define DEFAULT_SRC_IP "10.0.7.1"
+#define DEFAULT_SRC_IP "10.0.11.1"
 
 struct pseudo_header {
     uint32_t src;
