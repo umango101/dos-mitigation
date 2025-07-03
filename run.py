@@ -68,9 +68,9 @@ for p in permutations:
     p['syn_pow_k'] = -1
 
   if len(p['attack_mitigation_pair']) > 2:
-    p['mitigated_attack_type'] = attack_type
+    p['mitigated_attack_type'] = "mitigated_dns_3"
   else:
-    p['mitigated_attack_type'] = attack_type
+    p['mitigated_attack_type'] = "mitigated_dns_3"
   p['attack_mitigation_pair'] = '"' + ','.join(p['attack_mitigation_pair']) + '"'
 
   
