@@ -22,15 +22,12 @@
 - hosts: active_clients
   gather_facts: no
   tasks:
-  - name: get local IP
-    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
-    register: local_ip
   - name: fail if client_app is not defined
     fail:
       msg: "client_app is not defined"
     when: client_app is not defined
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
@@ -82,8 +79,7 @@
 
 # Unmitigated Attack
 - import_playbook: "clear_logs.yml"
-
-- hosts: active_attackers
+- hosts: a0
   gather_facts: no
   tasks:
   - name: launch {{ attack_type }} attack
@@ -96,11 +92,8 @@
 - hosts: active_clients
   gather_facts: no
   tasks:
-  - name: get local IP
-    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
-    register: local_ip
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
@@ -175,11 +168,8 @@
 - hosts: active_clients
   gather_facts: no
   tasks:
-  - name: get local IP
-    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
-    register: local_ip
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4280650737 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4280650737 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
@@ -232,7 +222,7 @@
 # Mitigated Attack
 - import_playbook: "clear_logs.yml"
 
-- hosts: active_attackers
+- hosts: a0
   gather_facts: no
   tasks:
   - name: launching {{ mitigated_attack_type }} attack
@@ -245,11 +235,8 @@
 - hosts: active_clients
   gather_facts: no
   tasks:
-  - name: get local IP
-    shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
-    register: local_ip
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4280650737 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4280650737 }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async

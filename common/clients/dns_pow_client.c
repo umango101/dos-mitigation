@@ -193,12 +193,12 @@ uint16_t random_port(void) {
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    if (argc <= 3) {
+    if (argc <= 2) {
 	printf("Please specify a target IP address and pow_threshold\n");
         exit(1);
     }
     
-    char *src_ip_str = argv[3];
+    char *src_ip_str = DEFAULT_SRC_IP;
     char *dst_ip_str = argv[1];
     uint32_t pow_threshold = strtoul(argv[2], NULL, 10);
     
