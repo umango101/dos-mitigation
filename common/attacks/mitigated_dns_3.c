@@ -11,9 +11,9 @@
 
 #define MAX_PACKET_SIZE 1500
 #define DNS_PORT 53
-#define DEFAULT_SRC_IP "10.0.11.1"
+#define DEFAULT_SRC_IP "10.0.12.1"
 #define MAX_ITERS 1500
-#define POW_THRESHOLD 4280650737 //iters = 300, can change
+#define POW_THRESHOLD 4273492458 //iters = 200, can change
 
 #if !defined (get16bits)
 #define get16bits(d) ((((unsigned long)(((const unsigned char *)(d))[1])) << 8)\

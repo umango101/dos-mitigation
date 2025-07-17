@@ -193,24 +193,15 @@ uint16_t random_port(void) {
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    if (argc <= 2) {
+    if (argc <= 3) {
 	printf("Please specify a target IP address and pow_threshold\n");
         exit(1);
     }
     
-    char *src_ip_str = DEFAULT_SRC_IP;
+    char *src_ip_str = argv[3];
     char *dst_ip_str = argv[1];
     uint32_t pow_threshold = strtoul(argv[2], NULL, 10);
     
-    // printf("set ips\n");
-
-    // if (argc > 1) {
-    //     strcpy(dst_ip_str, argv[0]);
-    // } else {
-    //     printf("Please specify a target IP address, and optionally a port number (default destination port is 53).\nExample usage: syn_flood 127.0.0.1 80\n");
-    //     exit(1);
-    // }
-
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
         perror("socket");
@@ -262,7 +253,7 @@ int main(int argc, char *argv[]) {
     iph->ttl = 64;
     iph->protocol = IPPROTO_UDP;
     iph->check = 0;
-    iph->saddr = inet_addr(DEFAULT_SRC_IP);
+    iph->saddr = inet_addr(src_ip_str);
     iph->daddr = sin.sin_addr.s_addr;
     iph->check = csum((unsigned short *)iph, sizeof(struct iphdr));
 

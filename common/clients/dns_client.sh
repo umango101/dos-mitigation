@@ -8,6 +8,7 @@ server_port=53
 request_interval=$2
 query_domain="www.google.com"
 threshold=$4
+client_ip=$5
 log_dir=/tmp/logs/
 # mkdir -p $log_dir
 # log_file="$log_dir/dns.csv"
@@ -33,7 +34,7 @@ while true; do
     start="$(date +%s%N)"
 #    curl -s --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk -r 1-$file_size --cacert /usr/local/dos-mitigation/server.pem
 #    dig @$server_ip $query_domain +norecurse +time=2 +tries=1 > /dev/null
-    ./dns_pow_client "$server_ip" "$threshold"
+    ./dns_pow_client "$server_ip" "$threshold" "$client_ip"
 
     ok=$?
     end="$(date +%s%N)"
