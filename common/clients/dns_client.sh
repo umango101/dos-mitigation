@@ -31,19 +31,23 @@ fi
 #echo "Threshold: $threshold"
 echo "status, start, end" >$log_file
 while true; do
-    start="$(date +%s%N)"
+    {
+	start="$(date +%s%N)"
 #    curl -s --create-dirs --no-keepalive -H 'Cache-Control: no-cache' $url -o /tmp/http_junk -r 1-$file_size --cacert /usr/local/dos-mitigation/server.pem
 #    dig @$server_ip $query_domain +norecurse +time=2 +tries=1 > /dev/null
-    ./dns_pow_client "$server_ip" "$threshold" "$client_ip"
-
-    ok=$?
-    end="$(date +%s%N)"
-    echo "$ok,$start,$end" >>$log_file
+	./dns_pow_client "$server_ip" "$threshold" "$client_ip"
+	ok=$?
+	end="$(date +%s%N)"
+	echo "$ok,$start,$end" >>$log_file
+    } &
 #    if dig +short @$server_ip "$query_domain" > /dev/null 2>&1; then
 #      echo "$query_domain resolved successfully."
 #    else
 #      echo "Failed to resolve $query_domain."
 #    fi
-    sleep $request_interval
+    {
+	sleep $request_interval
+    } &
+    wait
 done
 
