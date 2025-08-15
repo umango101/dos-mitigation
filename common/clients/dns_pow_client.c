@@ -201,7 +201,13 @@ int main(int argc, char *argv[]) {
     char *src_ip_str = argv[3];
     char *dst_ip_str = argv[1];
     uint32_t pow_threshold = strtoul(argv[2], NULL, 10);
-    
+    if (pow_threshold < 1) {
+	pow_threshold = 1;
+    }
+    double threshold_ratio = ((double)(pow_threshold - 1)) / pow_threshold;
+    pow_threshold = (uint32_t) (threshold_ratio * 4294967295);
+    //printf("POW threshold set: %lu\n", pow_threshold);
+
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
     if (sock < 0) {
         perror("socket");
@@ -290,7 +296,7 @@ int main(int argc, char *argv[]) {
     } else {
         char src_buf[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-        //printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
+        //printf("Sent packet from %s:%d with TID %x and iters %lu\n", src_buf, udph->source, dnsh->tid, iters);
     }
 
     int recv_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);

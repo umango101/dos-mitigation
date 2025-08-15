@@ -85,8 +85,11 @@
 - hosts: active_attackers
   gather_facts: no
   tasks:
+  - name: get server IP
+    shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
+    register: server_ip
   - name: launch {{ attack_type }} attack
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ attacker_busywait }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ attacker_busywait }} {{ server_ip.stdout }} {{ 0 }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -178,7 +181,7 @@
     shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
     register: local_ip
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4273492458 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ threshold }} {{ local_ip.stdout }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
@@ -234,8 +237,11 @@
 - hosts: active_attackers
   gather_facts: no
   tasks:
+  - name: get server IP
+    shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
+    register: server_ip
   - name: launching {{ mitigated_attack_type }} attack
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ attacker_busywait }} 
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ attacker_busywait }} {{ server_ip.stdout }} {{ threshold }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -248,7 +254,7 @@
     shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
     register: local_ip
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 4273492458 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ threshold }} {{ local_ip.stdout }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async

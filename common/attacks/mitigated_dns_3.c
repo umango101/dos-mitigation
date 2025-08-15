@@ -94,7 +94,7 @@ static __inline unsigned long dns_hash(struct message_digest* digest) {
     return SuperFastHash((const char *)digest, sizeof(struct message_digest));
 }
 
-static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
+static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh, uint32_t pow_threshold) {
     unsigned long hash = 0;
     unsigned long best_hash = 0;
     unsigned short hash_iters = 0;
@@ -110,7 +110,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     digest.dport = udph->dest;
     digest.tid = dnsh->tid;
 
-    if (POW_THRESHOLD > 0) {
+    if (pow_threshold > 0) {
         #pragma unroll
         for (unsigned short i=0; i<MAX_ITERS; i++) {
 	    nonce = (nonce + 1) % 0xffff;
@@ -121,7 +121,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
             if (hash > best_hash) {
                 best_nonce = nonce;
                 best_hash = hash;
-                if (best_hash >= POW_THRESHOLD) {
+                if (best_hash >= pow_threshold) {
                     break;
                 }
             }
@@ -192,7 +192,20 @@ uint16_t random_port(void) {
 int main(int argc, char *argv[]) {
     srand(time(NULL));
 
-    char *src_ip_str = DEFAULT_SRC_IP;
+    if (argc <= 3) {
+        printf("Please specify a server IP address and pow_threshold\n");
+        exit(1);
+    }
+
+    char *src_ip_str = argv[2];
+    uint32_t pow_threshold = strtoul(argv[3], NULL, 10);
+    if (pow_threshold < 1) {
+	pow_threshold = 1;
+    }
+    double threshold_ratio = ((double)(pow_threshold - 1)) / pow_threshold;
+    pow_threshold = (uint32_t) (threshold_ratio * 4294967295);
+    //printf("POW threshold set: %lu\n", pow_threshold);
+
     char *dst_ip_str = "0";
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
@@ -258,9 +271,10 @@ int main(int argc, char *argv[]) {
         iph->ttl = 64;
         iph->protocol = IPPROTO_UDP;
         iph->check = 0;
-        iph->saddr = inet_addr(DEFAULT_SRC_IP);
+        iph->saddr = inet_addr(src_ip_str);
         iph->daddr = sin.sin_addr.s_addr;
         iph->check = csum((unsigned short *)iph, sizeof(struct iphdr));
+	//printf("Set source IP\n");
 
         udph->source = htons(random_port());
         udph->dest = htons(DNS_PORT);
@@ -274,7 +288,7 @@ int main(int argc, char *argv[]) {
         psh.udp_length = htons(udp_len);
 
 	dnsh->tid = htons(rand() % (0xffff));
-	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh);
+	uint32_t iters = (uint32_t) do_dns_pow(iph, udph, dnsh, pow_threshold);
 	int psize = sizeof(struct pseudo_header) + udp_len;
 	char *pseudogram = malloc(psize);
 	if (!pseudogram) {
@@ -290,7 +304,7 @@ int main(int argc, char *argv[]) {
         } else {
             char src_buf[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &iph->saddr, src_buf, sizeof(src_buf));
-            // printf("Sent packet from %s:%d with TID %x\n", src_buf, udph->source, dnsh->tid);
+            //printf("Sent packet from %s:%d with TID %x and iters %lu\n", src_buf, udph->source, dnsh->tid, iters);
         }
 	count = count + 1;
     }
