@@ -30,7 +30,7 @@
       msg: "client_app is not defined"
     when: client_app is not defined
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 1 }} {{ local_ip.stdout }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
@@ -89,7 +89,7 @@
     shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
     register: server_ip
   - name: launch {{ attack_type }} attack
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ attacker_busywait }} {{ server_ip.stdout }} {{ 0 }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ attack_type }} {{ attacker_busywait }} {{ server_ip.stdout }} {{ 1 }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -102,7 +102,7 @@
     shell: "getent hosts {{ inventory_hostname }} | awk '{ print $1 }'"
     register: local_ip
   - name: start {{ client_app }} clients
-    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 0 }} {{ local_ip.stdout }}
+    shell: timeout {{ client_duration }} {{ user_dir }}/common/clients/{{ client_app }}.sh {{ server_name }} {{ client_interval }} {{ file_size }} {{ 1 }} {{ local_ip.stdout }}
     async: "{{ client_duration }}"
     poll: 0
     register: client_async
