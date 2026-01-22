@@ -1,0 +1,11 @@
+--2025-03-27 14:21:19--  https://www.enterprisedb.com/postgresql-tutorial-resources-training-1?uuid=47661062-4eb7-460d-9e12-18d27a921710
+Resolving www.enterprisedb.com (www.enterprisedb.com)... 18.161.21.117, 18.161.21.101, 18.161.21.87, ...
+Connecting to www.enterprisedb.com (www.enterprisedb.com)|18.161.21.117|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [text/html]
+Saving to: ‘postgresql-tutorial-resources-training-1?uuid=47661062-4eb7-460d-9e12-18d27a921710’
+
+                postgresql-tutor     [<=>                                                       ]       0  --.-KB/s               postgresql-tutorial-resources-tr     [ <=>                                                      ]  66.52K  --.-KB/s    in 0.03s   
+
+2025-03-27 14:21:19 (2.44 MB/s) - ‘postgresql-tutorial-resources-training-1?uuid=47661062-4eb7-460d-9e12-18d27a921710’ saved [68115]
+

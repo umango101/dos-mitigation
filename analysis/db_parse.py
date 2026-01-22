@@ -9,7 +9,7 @@ from pprint import pprint
 from datetime import datetime
 
 
-log_dir = "/usr/local/dos-mitigation/data"
+log_dir = "/data/umang/dos-mitigation/logs"
 db_name = "dos"
 
 maximize_metrics = ['Transaction Status', "Transactions per Second", "Average Transactions per Second"]
@@ -142,7 +142,7 @@ def parse_experiment(conn: dbh.Connection, materialization, session, experiment,
                 if filename.endswith('.zip'):
                     continue
                 path = "{}/{}/{}/{}/{}/{}/logs/{}".format(log_dir, materialization, session, experiment, host, mode, filename)
-                if filename in ["tcp.csv", "http.csv", "https.csv", "http3.csv"]:
+                if filename in ["tcp.csv", "http.csv", "https.csv", "http3.csv", "dns.csv"]:
                     success_data, failure_data = parse_csv(path)
                     query = "insert into data (metric, host, experiment, attack_enabled, mitigation_enabled, timestamp, value) VALUES %s"
                     for data, metric in [
