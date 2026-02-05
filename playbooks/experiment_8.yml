@@ -241,7 +241,7 @@
     shell: "getent hosts {{ server_name }} | awk '{ print $1 }'"
     register: server_ip
   - name: launching {{ mitigated_attack_type }} attack
-    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ attacker_busywait }} {{ server_ip.stdout }} {{ threshold }}
+    shell: timeout {{ attack_duration }} cpulimit -l {{ attacker_cpu_limit }} -f -- {{ user_dir }}/common/attacks/{{ mitigated_attack_type }} {{ attacker_busywait }} {{ server_ip.stdout }} {{ 1 if attackers_do_mitigation == 0 else threshold }}
     async: "{{ attack_duration }}"
     poll: 0
     become: yes
@@ -327,7 +327,7 @@
 - hosts: server, router, active_clients, active_attackers, auth0, auth1, auth2, auth3
   gather_facts: yes
   vars:
-    - log_dir: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
+      log_dir: "{{ user_dir }}/logs/{{ session }}/{{ timestamp }}/{{ inventory_hostname }}"
   tasks:
     - name: decompress logs
       unarchive:
