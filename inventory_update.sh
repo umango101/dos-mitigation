@@ -5,8 +5,11 @@ if [ ! -f .settings ]; then
 fi
 source .settings
 
-cp mrg_hosts hosts
-cp mrg_etchosts etchosts
+sed 's/moddeter\///g' mrg_hosts > hosts
+sed 's/moddeter\///g' mrg_etchosts > etchosts
+
+# cp mrg_hosts hosts
+# cp mrg_etchosts etchosts
 echo "[active_clients]" >> hosts
 for (( i=0; i<n_clients; i++ )); do
     echo "c$i" >> hosts
