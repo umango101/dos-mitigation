@@ -65,12 +65,22 @@ const unsigned short MAX_ITERS = 64;
 
 static void *BPF_FUNC(map_lookup_elem, void *map, const void *key);
 
+static unsigned long long BPF_FUNC(ktime_get_ns);
+
 struct bpf_elf_map acc_map __section("maps") = {
         .type           = BPF_MAP_TYPE_ARRAY,
         .size_key       = sizeof(uint32_t),
         .size_value     = sizeof(uint32_t),
         .pinning        = PIN_GLOBAL_NS,
         .max_elem       = 2,
+};
+
+struct bpf_elf_map offset_map __section("maps") = {
+    .type           = BPF_MAP_TYPE_ARRAY,
+    .size_key       = sizeof(uint32_t),
+    .size_value     = sizeof(int64_t),
+    .pinning        = PIN_GLOBAL_NS,
+    .max_elem       = 1,
 };
 
 // enum Maps {DROP_MAP, PASS_MAP, ITERS_MAP};
@@ -121,8 +131,16 @@ static __inline void pack_be64(unsigned char out[8], unsigned long long v) {
 	out[7] = (unsigned char)(v      );
 }
 
-static __inline unsigned long long now_ms(void) {
-	return ktime_get_real_ns() / 1000000ULL;
+// static __inline unsigned long long now_ms(void) {
+// 	return ktime_get_real_ns() / 1000000ULL;
+// }
+
+static __inline unsigned long long verifier_now_ms(void) {
+    uint32_t key = 0;
+    int64_t *off = map_lookup_elem(&offset_map, &key);
+    unsigned long long mono_ms = ktime_get_ns() / 1000000ULL;
+    if (!off) return 0;
+    return (unsigned long long)((long long)mono_ms + *off);
 }
 
 static __inline unsigned long SuperFastHash (const char* data, int len) {
@@ -188,6 +206,7 @@ static __inline bool check_pow_at_ts(struct iphdr* iph, struct udphdr* udph, str
 }
 
 static __inline bool fresh_enough(unsigned long long now, unsigned long long ts64) {
+	if (now == 0) return false;
 	long long delta = (long long)now - (long long)ts64;
 	if (delta < 0) delta = -delta;
 	return (unsigned long long)delta <= POW_FRESHNESS_MS;
@@ -205,7 +224,7 @@ static __inline bool valid_dns_pow(struct iphdr* iph, struct udphdr* udph, struc
 	// printf("pow: %x, tid: %x, hash: %ld\n", POW_THRESHOLD, dnsh->tid, hash);
 	// bool valid = (hash >= (unsigned long) POW_THRESHOLD);
 	// return valid;
-	unsigned long long now = now_ms();
+	unsigned long long now = verifier_now_ms();
 	unsigned long long high48 = now & ~((unsigned long long)0xFFFFULL);
 	unsigned long long low16  = (unsigned long long) ntohs(udph->source);
 	unsigned long long ts_now   = high48 | low16;
@@ -227,7 +246,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 	// unsigned long nonce = (unsigned long)(e->start_ts & 0xffffffff);
 	unsigned long best_nonce = nonce;
 
-	unsigned long long ts64 = now_ms();
+	unsigned long long ts64 = verifier_now_ms();
 	struct message_digest digest;
 	digest.saddr = iph->saddr;
 	digest.daddr = iph->daddr;

@@ -1,0 +1,14 @@
+- name: compile auths
+  hosts: auth0, auth1, auth2, auth3
+  tasks:
+    - name: run dns_setup.sh
+      shell: sudo ./dns_setup.sh
+      args: 
+        chdir: /usr/local/dos-mitigation/common/setup
+        creates: /etc/bind/zones/db.google.com
+      become: yes
+    - name: compile dns_pow offsetd
+      shell: gcc /usr/local/dos-mitigation/common/bin/dns_pow_offsetd.c -o /usr/local/dos-mitigation/common/bin/dns_pow_offsetd
+      args:
+        creates: /usr/local/dos-mitigation/common/bin/dns_pow_offsetd
+      become: yes
