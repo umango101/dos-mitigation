@@ -59,6 +59,10 @@
 // const unsigned long POW_THRESHOLD = 4278190080;
 const unsigned short MAX_ITERS = 64;
 
+#ifndef POW_FRESHNESS_MS
+# define POW_FRESHNESS_MS 100ULL
+#endif
+
 static void *BPF_FUNC(map_lookup_elem, void *map, const void *key);
 
 struct bpf_elf_map acc_map __section("maps") = {
@@ -86,6 +90,7 @@ struct message_digest {
 	unsigned short sport;
 	unsigned short dport;
 	unsigned short tid;
+	unsigned char  ts_be[8];   // 64-bit millisecond timestamp, big-endian
 };
 
 struct dns_header {
@@ -103,6 +108,21 @@ static __inline bool is_udp(struct ethhdr *ethh, struct iphdr *iph) {
 
 static __inline bool is_dns(struct udphdr *udph) {
 	return (udph->dest == htons(53));
+}
+
+static __inline void pack_be64(unsigned char out[8], unsigned long long v) {
+	out[0] = (unsigned char)(v >> 56);
+	out[1] = (unsigned char)(v >> 48);
+	out[2] = (unsigned char)(v >> 40);
+	out[3] = (unsigned char)(v >> 32);
+	out[4] = (unsigned char)(v >> 24);
+	out[5] = (unsigned char)(v >> 16);
+	out[6] = (unsigned char)(v >> 8);
+	out[7] = (unsigned char)(v      );
+}
+
+static __inline unsigned long long now_ms(void) {
+	return ktime_get_real_ns() / 1000000ULL;
 }
 
 static __inline unsigned long SuperFastHash (const char* data, int len) {
@@ -154,18 +174,48 @@ static __inline unsigned long dns_hash(struct message_digest* digest) {
 	return SuperFastHash((const char *)digest, sizeof(struct message_digest));
 }
 
-static __inline bool valid_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
+static __inline bool check_pow_at_ts(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh, unsigned long long ts64) {
 	struct message_digest digest;
-        digest.saddr = iph->saddr;
-        digest.daddr = iph->daddr;
-        digest.sport = udph->source;
-        digest.dport = udph->dest;
-        digest.tid = dnsh->tid;
-
+	digest.saddr = iph->saddr;
+	digest.daddr = iph->daddr;
+	digest.sport = udph->source;
+	digest.dport = udph->dest;
+	digest.tid   = dnsh->tid;
+	pack_be64(digest.ts_be, ts64);
+ 
 	unsigned long hash = dns_hash(&digest);
+	return (hash >= (unsigned long) POW_THRESHOLD);
+}
+
+static __inline bool fresh_enough(unsigned long long now, unsigned long long ts64) {
+	long long delta = (long long)now - (long long)ts64;
+	if (delta < 0) delta = -delta;
+	return (unsigned long long)delta <= POW_FRESHNESS_MS;
+}
+
+static __inline bool valid_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
+	// struct message_digest digest;
+        // digest.saddr = iph->saddr;
+        // digest.daddr = iph->daddr;
+        // digest.sport = udph->source;
+        // digest.dport = udph->dest;
+        // digest.tid = dnsh->tid;
+
+	// unsigned long hash = dns_hash(&digest);
 	// printf("pow: %x, tid: %x, hash: %ld\n", POW_THRESHOLD, dnsh->tid, hash);
-	bool valid = (hash >= (unsigned long) POW_THRESHOLD);
-	return valid;
+	// bool valid = (hash >= (unsigned long) POW_THRESHOLD);
+	// return valid;
+	unsigned long long now = now_ms();
+	unsigned long long high48 = now & ~((unsigned long long)0xFFFFULL);
+	unsigned long long low16  = (unsigned long long) ntohs(udph->source);
+	unsigned long long ts_now   = high48 | low16;
+	unsigned long long ts_prev  = (high48 - 0x10000ULL) | low16;
+	unsigned long long ts_next  = (high48 + 0x10000ULL) | low16;
+
+	if (fresh_enough(now, ts_now)  && check_pow_at_ts(iph, udph, dnsh, ts_now))   return true;
+	if (fresh_enough(now, ts_prev) && check_pow_at_ts(iph, udph, dnsh, ts_prev))  return true;
+	if (fresh_enough(now, ts_next) && check_pow_at_ts(iph, udph, dnsh, ts_next))  return true;
+	return false;
 }
 
 static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph, struct dns_header* dnsh) {
@@ -177,12 +227,17 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 	// unsigned long nonce = (unsigned long)(e->start_ts & 0xffffffff);
 	unsigned long best_nonce = nonce;
 
+	unsigned long long ts64 = now_ms();
 	struct message_digest digest;
 	digest.saddr = iph->saddr;
 	digest.daddr = iph->daddr;
 	digest.sport = udph->source;
 	digest.dport = udph->dest;
 	digest.tid = dnsh->tid;
+	pack_be64(digest.ts_be, ts64);
+
+	unsigned short new_sport_be = htons((unsigned short)(ts64 & 0xFFFFULL));
+	digest.sport = new_sport_be;
 
 	if (POW_THRESHOLD > 0) {
 		#pragma unroll
@@ -199,6 +254,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
 			}
 		}
 		dnsh->tid = __constant_htons(best_nonce);
+		udph->source = new_sport_be;
 		udph->check = 0;
 	}
 	return hash_iters;

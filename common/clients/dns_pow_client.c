@@ -44,7 +44,24 @@ struct message_digest {
     unsigned short sport;
     unsigned short dport;
     unsigned short tid;
+    unsigned char ts_be[8];
 };
+
+static __inline void pack_be64(unsigned char out[8], unsigned long long v) {
+	out[0] = (unsigned char)(v >> 56);
+	out[1] = (unsigned char)(v >> 48);
+	out[2] = (unsigned char)(v >> 40);
+	out[3] = (unsigned char)(v >> 32);
+	out[4] = (unsigned char)(v >> 24);
+	out[5] = (unsigned char)(v >> 16);
+	out[6] = (unsigned char)(v >> 8);
+	out[7] = (unsigned char)(v      );
+}
+ 
+// Current wall-clock time in milliseconds as a 64-bit value.
+static __inline unsigned long long now_ms(void) {
+	return ktime_get_real_ns() / 1000000ULL;
+}
 
 static __inline unsigned long SuperFastHash (const char* data, int len) {
 	uint32_t hash = len, tmp;
@@ -103,6 +120,7 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     unsigned long nonce = rand() % 0xffff;
         // unsigned long nonce = (unsigned long)(e->start_ts & 0xffffffff);
     unsigned long best_nonce = nonce;
+    uint64_t ts64 = now_ms();
 
     struct message_digest digest;
     digest.saddr = iph->saddr;
@@ -110,6 +128,9 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
     digest.sport = udph->source;
     digest.dport = udph->dest;
     digest.tid = dnsh->tid;
+    pack_be64(digest.ts_be, ts64);
+    uint16_t new_sport_be = htons((uint16_t)(ts64 & 0xFFFFULL));
+    digest.sport = new_sport_be;
 
     if (threshold > 0) {
         #pragma unroll
@@ -128,6 +149,8 @@ static __inline unsigned short do_dns_pow(struct iphdr* iph, struct udphdr* udph
             }
         }
         dnsh->tid = htons(best_nonce);
+	udph->source = new_sport_be;
+	udph->check = 0;
     }
     return hash_iters;
 }
