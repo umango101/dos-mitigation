@@ -59,9 +59,11 @@ static __inline void pack_be64(unsigned char out[8], unsigned long long v) {
 }
  
 // Current wall-clock time in milliseconds as a 64-bit value.
-static __inline unsigned long long now_ms(void) {
-	return ktime_get_real_ns() / 1000000ULL;
-}
+static inline uint64_t now_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)ts.tv_nsec / 1000000ULL;
+} 
 
 static __inline unsigned long SuperFastHash (const char* data, int len) {
 	uint32_t hash = len, tmp;
